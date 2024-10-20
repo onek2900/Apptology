@@ -32,7 +32,8 @@ dependencies:
     sdk: flutter
   flutter_inappwebview: ^6.1.4
   sunmi_printerx: ^1.0.17
-
+  sqflite: ^2.3.3+1
+  path: ^1.9.0
 
   # To handle in-app browser
   # Add other SDK dependencies here
