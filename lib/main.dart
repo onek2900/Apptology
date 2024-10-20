@@ -154,13 +154,19 @@ class PortalPage extends StatelessWidget {
         ),
       ),
       home: Scaffold(
+        // Inside PortalPage AppBar
         appBar: AppBar(
           title: Row(
+            mainAxisAlignment: MainAxisAlignment.start, // Align content to the left
+            crossAxisAlignment: CrossAxisAlignment.start, // Align to the top
             children: [
-              Image.asset(
-                'assets/POSTology.png', // Path to the image
-                width: 50.0, // Set width for the logo
-                height: 50.0, // Set height for the logo
+              Padding(
+                padding: const EdgeInsets.only(top: 1.0), // Add a single line space from the top
+                child: Image.asset(
+                  'assets/POSTology.png', // Path to the image
+                  width: 50.0, // Set width for the logo
+                  height: 50.0, // Set height for the logo
+                ),
               ),
             ],
           ),
@@ -251,13 +257,19 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
       home: Scaffold(
+        // Inside SettingsPage AppBar
         appBar: AppBar(
           title: Row(
+            mainAxisAlignment: MainAxisAlignment.start, // Align content to the left
+            crossAxisAlignment: CrossAxisAlignment.start, // Align to the top
             children: [
-              Image.asset(
-                'assets/POSTology.png', // Path to the image
-                width: 50.0, // Set width for the logo
-                height: 50.0, // Set height for the logo
+              Padding(
+                padding: const EdgeInsets.only(top: 1.0), // Add a single line space from the top
+                child: Image.asset(
+                  'assets/POSTology.png', // Path to the image
+                  width: 50.0, // Set width for the logo
+                  height: 50.0, // Set height for the logo
+                ),
               ),
             ],
           ),
