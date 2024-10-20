@@ -1,23 +1,7 @@
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-        maven {
-            url "https://storage.googleapis.com/download.flutter.io" // Add the Flutter repository
-        }
-    }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:8.4.0' // Use the latest compatible version
-    }
-}
-
 allprojects {
     repositories {
         google()
         mavenCentral()
-        maven {
-            url "https://storage.googleapis.com/download.flutter.io" // Add the Flutter repository for dependencies
-        }
     }
 }
 
