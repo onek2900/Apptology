@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'nearpay_service.dart'; // Import your service file
+import 'package:nearpay_flutter_sdk/nearpay.dart';
 
 class NearpayPaymentint extends StatefulWidget {
   @override
@@ -8,7 +8,45 @@ class NearpayPaymentint extends StatefulWidget {
 
 class _NearpayPaymentintState extends State<NearpayPaymentint> {
   String initializationStatus = "Not initialized";
-  final NearpayService nearpayService = NearpayService(); // Create an instance of your service class
+
+  // Declare Nearpay as a class-level variable so that it can be accessed by both functions
+  late Nearpay nearpay;
+
+  // Method to initialize Nearpay
+  Future<void> _initializeNearpay() async {
+    nearpay = Nearpay(
+      authType: AuthenticationType.login,
+      authValue: " ",
+      env: Environments.sandbox, // [Required] environment reference
+      locale: Locale.localeDefault, // [Optional] locale reference
+    );
+
+    try {
+      await nearpay.initialize();
+      await nearpay.setup();
+      setState(() {
+        initializationStatus = "Initialization successful!";
+      });
+    } catch (e) {
+      setState(() {
+        initializationStatus = "Initialization failed: $e";
+      });
+    }
+  }
+
+  // Method to logout from Nearpay
+  Future<void> _NearpayLogout() async {
+    try {
+      await nearpay.logout();
+      setState(() {
+        initializationStatus = "Logged out successfully!";
+      });
+    } catch (e) {
+      setState(() {
+        initializationStatus = "Logout failed: $e";
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,33 +64,11 @@ class _NearpayPaymentintState extends State<NearpayPaymentint> {
             ),
             SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () async {
-                try {
-                  await nearpayService.initializeNearpay();
-                  setState(() {
-                    initializationStatus = "Initialization successful!";
-                  });
-                } catch (e) {
-                  setState(() {
-                    initializationStatus = "Initialization failed: $e";
-                  });
-                }
-              },
+              onPressed: _initializeNearpay, // Call the Nearpay initialization when pressed
               child: Text('Initialize Nearpay'),
             ),
             ElevatedButton(
-              onPressed: () async {
-                try {
-                  await nearpayService.logoutNearpay();
-                  setState(() {
-                    initializationStatus = "Logged out successfully!";
-                  });
-                } catch (e) {
-                  setState(() {
-                    initializationStatus = "Logout failed: $e";
-                  });
-                }
-              },
+              onPressed: _NearpayLogout, // Call Nearpay logout when pressed
               child: Text('Logout Nearpay'),
             ),
           ],
