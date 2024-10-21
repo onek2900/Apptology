@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:sqflite/sqflite.dart';
 import 'package:sunmi_printerx/sunmi_printerx.dart';
 import 'package:sunmi_printerx/printer.dart';
 import 'database/database_helper.dart';
 import 'models/printer_model.dart';
+import 'stored_printers_page.dart'; // Import to show stored printers
 
 class PrinterManagementPage extends StatefulWidget {
   @override
@@ -14,13 +16,19 @@ class _PrinterManagementPageState extends State<PrinterManagementPage> {
   List<Printer> printerList = [];
   SunmiPrinterX printer = SunmiPrinterX();
   List<TextEditingController> categoryControllers = []; // Controllers for category text fields
+  int? selectedMainPrinterIndex; // To track which radio button is selected
 
   @override
   void initState() {
     super.initState();
+    _deleteExistingDatabaseAndInitialize(); // This method will delete and reinitialize the database
     _getPrinters(); // Fetch printers when the app starts
   }
-
+// Method to delete the database and initialize it
+  Future<void> _deleteExistingDatabaseAndInitialize() async {
+    await DatabaseHelper.instance.deleteDatabaseFile(); // Deletes the existing database file
+    await DatabaseHelper.instance.database; // Reinitialize the database
+  }
   Future<void> _getPrinters() async {
     try {
       final List<Printer> printers = await printer.getPrinters();
@@ -37,75 +45,58 @@ class _PrinterManagementPageState extends State<PrinterManagementPage> {
     }
   }
 
-  // Store a single printer in the database
-  Future<void> _storePrinterInDatabase(Printer printer, String category) async {
-    PrinterModel printerModel = PrinterModel(
-      name: printer.name,
-      category: category,
-    );
-
-    await DatabaseHelper.instance.insertPrinter(printerModel);
-    print('Printer saved in the database: ${printer.name}');
+  // Ensure database is initialized
+  Future<void> _initializeDatabase() async {
+    await DatabaseHelper.instance.database; // This will ensure the database is initialized
   }
 
-  // Delete all existing printers and then store the new ones
+  // Store all printers into the database after clearing the previous entries
   Future<void> _storeAllPrintersInDatabase() async {
-    // First, delete all existing printers
-    await DatabaseHelper.instance.deleteAllPrinters();
 
-    // Now store the current list of printers
-    for (int i = 0; i < printerList.length; i++) {
-      final printer = printerList[i];
-      final category = categoryControllers[i].text;
+    try {
+      // Delete all previous entries before adding new ones
+      await DatabaseHelper.instance.deleteAllPrinters();
 
-      if (category.isNotEmpty) {
-        await _storePrinterInDatabase(printer, category);
-      } else {
-        print('Category is empty for printer: ${printer.name}');
+      // Loop through the list of printers and store each one
+      for (int i = 0; i < printerList.length; i++) {
+        Printer printer = printerList[i];
+        String category = categoryControllers[i].text;
+
+        // Ensure category is not empty, set a default if required
+        if (category.isEmpty) {
+          category = 'Uncategorized'; // Default category if none is provided
+        }
+
+        PrinterModel printerModel = PrinterModel(
+          name: printer.name!,
+          category: category,
+          printerId: printer.id!,
+          isMain: selectedMainPrinterIndex == i, // Set this as the main printer if selected
+        );
+
+        // Insert the printer into the database
+        await DatabaseHelper.instance.insertPrinter(printerModel);
+        print('Printer ${printer.name} stored in database');
       }
-    }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Printers saved in the database')),
-    );
+      // Show a success message after storing all printers
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('All printers have been stored successfully!')),
+      );
+    } catch (e) {
+      // Handle any errors during storage
+      print('Error storing printers: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to store printers: $e')),
+      );
+    }
   }
 
-  // Fetch all printers stored in the database
-  Future<void> _displayStoredPrinters() async {
-    List<PrinterModel> storedPrinters = await DatabaseHelper.instance.getPrinters();
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Stored Printers'),
-          content: Container(
-            width: double.maxFinite,
-            child: storedPrinters.isNotEmpty
-                ? ListView.builder(
-              shrinkWrap: true,
-              itemCount: storedPrinters.length,
-              itemBuilder: (context, index) {
-                final printer = storedPrinters[index];
-                return ListTile(
-                  title: Text(printer.name ?? 'Unknown Printer'),
-                  subtitle: Text('Category: ${printer.category ?? 'No category'}'),
-                );
-              },
-            )
-                : Text('No printers stored in the database.'),
-          ),
-          actions: [
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Close'),
-            ),
-          ],
-        );
-      },
-    );
+  // Set the selected printer as the main printer and update the database
+  Future<void> _setAsMainPrinter(int index) async {
+    setState(() {
+      selectedMainPrinterIndex = index; // Mark this index as the main printer
+    });
   }
 
   Future<void> _testPrintAndOpenDrawer(Printer printer, String category) async {
@@ -117,9 +108,6 @@ class _PrinterManagementPageState extends State<PrinterManagementPage> {
       // Open the cash drawer for the selected printer
       await printer.openCashDrawer(); // Correct method to open cash drawer
       print('Cash drawer opened for ${printer.name}');
-
-      // Store the printer in the database after printing
-      await _storePrinterInDatabase(printer, category);
     } catch (e) {
       print('Failed to print or open drawer for ${printer.name}: $e');
     }
@@ -159,6 +147,12 @@ class _PrinterManagementPageState extends State<PrinterManagementPage> {
                       ),
                       DataColumn(
                         label: Text(
+                          'Main',
+                          style: TextStyle(fontStyle: FontStyle.italic),
+                        ),
+                      ),
+                      DataColumn(
+                        label: Text(
                           'Test Print',
                           style: TextStyle(fontStyle: FontStyle.italic),
                         ),
@@ -184,10 +178,19 @@ class _PrinterManagementPageState extends State<PrinterManagementPage> {
                               Text(printer.name ?? 'Unknown Printer'),
                             ),
                             DataCell(
+                              Radio<int>(
+                                value: index, // The index of this printer
+                                groupValue: selectedMainPrinterIndex, // The selected index
+                                onChanged: (int? value) {
+                                  _setAsMainPrinter(index); // Set this printer as the main one
+                                },
+                              ),
+                            ),
+                            DataCell(
                               ElevatedButton(
                                 onPressed: () {
                                   final category = categoryControllers[index].text;
-                                  _testPrintAndOpenDrawer(printer, category); // Print and open drawer for this specific printer and store it in the database
+                                  _testPrintAndOpenDrawer(printer, category); // Print and open drawer for this specific printer
                                 },
                                 child: Text('Print Test'),
                               ),
@@ -202,18 +205,21 @@ class _PrinterManagementPageState extends State<PrinterManagementPage> {
             else
               Text('No printers found'),
             SizedBox(height: 20),
-            // Place the two buttons in a Row to display them side by side
             Row(
-              mainAxisAlignment: MainAxisAlignment.center, // Center the row horizontally
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton(
-                  onPressed: _storeAllPrintersInDatabase,
-                  child: Text('Save Printers'),
+                  onPressed: _storeAllPrintersInDatabase, // Store printers in the database
+                  child: Text('Store Printers'),
                 ),
-                SizedBox(width: 20), // Add space between the buttons
+                SizedBox(width: 20),
                 ElevatedButton(
-                  onPressed: _displayStoredPrinters,
-                  child: Text('Show Existing Printers'),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => StoredPrintersPage()),
+                    );
+                  },
+                  child: Text('Show Stored Printers'),
                 ),
               ],
             ),

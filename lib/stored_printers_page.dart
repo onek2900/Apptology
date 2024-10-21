@@ -8,18 +8,18 @@ class StoredPrintersPage extends StatefulWidget {
 }
 
 class _StoredPrintersPageState extends State<StoredPrintersPage> {
-  List<PrinterModel> storedPrinters = [];
+  List<PrinterModel> printers = [];
 
   @override
   void initState() {
     super.initState();
-    _loadStoredPrinters();
+    _getStoredPrinters(); // Fetch the stored printers when the page loads
   }
 
-  Future<void> _loadStoredPrinters() async {
-    final List<PrinterModel> printers = await DatabaseHelper.instance.getPrinters();
+  Future<void> _getStoredPrinters() async {
+    final List<PrinterModel> storedPrinters = await DatabaseHelper.instance.getAllPrinters();
     setState(() {
-      storedPrinters = printers;
+      printers = storedPrinters;
     });
   }
 
@@ -29,15 +29,16 @@ class _StoredPrintersPageState extends State<StoredPrintersPage> {
       appBar: AppBar(
         title: Text('Stored Printers'),
       ),
-      body: storedPrinters.isEmpty
+      body: printers.isEmpty
           ? Center(child: Text('No printers stored in the database.'))
           : ListView.builder(
-        itemCount: storedPrinters.length,
+        itemCount: printers.length,
         itemBuilder: (context, index) {
-          final printer = storedPrinters[index];
+          final printer = printers[index];
           return ListTile(
             title: Text(printer.name),
-            subtitle: Text('Category: ${printer.category}'),
+            subtitle: Text('Category: ${printer.category}, ID: ${printer.printerId}'),
+            trailing: Text(printer.isMain == 1 ? 'Main Printer' : ''),
           );
         },
       ),

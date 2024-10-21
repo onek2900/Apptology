@@ -9,7 +9,7 @@ android {
     namespace = "com.postology.postology"
     compileSdk = 34  // Explicitly set the compile SDK version
 
-    ndkVersion = "21.3.6528147"  // Use a valid NDK version, or remove if not needed
+    ndkVersion = "25.1.8937393"  // Use a valid NDK version, or remove if not needed
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
