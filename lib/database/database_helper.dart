@@ -13,8 +13,8 @@ class DatabaseHelper {
   static Database? _database;
 
   Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDatabase();
+    if (_database != null && _database!.isOpen) return _database!;
+    _database = await _initDatabase();  // Initialize database if it's null or closed
     return _database!;
   }
   _initDatabase() async {

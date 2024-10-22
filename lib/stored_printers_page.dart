@@ -18,9 +18,17 @@ class _StoredPrintersPageState extends State<StoredPrintersPage> {
 
   Future<void> _getStoredPrinters() async {
     final List<PrinterModel> storedPrinters = await DatabaseHelper.instance.getAllPrinters();
-    setState(() {
-      printers = storedPrinters;
-    });
+
+    // Debugging statement to check if printers were retrieved
+    print('Stored Printers: ${storedPrinters.length} printers found.');
+
+    if (storedPrinters.isNotEmpty) {
+      setState(() {
+        printers = storedPrinters;
+      });
+    } else {
+      print('No printers stored in the database.');
+    }
   }
 
   @override
@@ -35,10 +43,15 @@ class _StoredPrintersPageState extends State<StoredPrintersPage> {
         itemCount: printers.length,
         itemBuilder: (context, index) {
           final printer = printers[index];
+
+          // Debugging statement to verify data
+          print('Displaying Printer: ${printer.name}, ${printer.printerId}, ${printer.category}, Main: ${printer.isMain}');
+
           return ListTile(
             title: Text(printer.name),
             subtitle: Text('Category: ${printer.category}, ID: ${printer.printerId}'),
-            trailing: Text(printer.isMain == 1 ? 'Main Printer' : ''),
+            trailing: Text(printer.isMain == 1 ? 'Main Printer' : 'Secondary Printer'),
+
           );
         },
       ),
