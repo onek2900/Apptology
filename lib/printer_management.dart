@@ -99,19 +99,20 @@ class _PrinterManagementPageState extends State<PrinterManagementPage> {
     });
   }
 
-  Future<void> _testPrintAndOpenDrawer(Printer printer, String category) async {
+  Future<void> _testPrintAndOpenDrawer(Printer printer1, String category) async {
     try {
-      // Send a sample text to the selected printer
-      await printer.printText('Sample Test Print\n\n\n\n\n');
-      print('Test print sent to ${printer.name}');
+      // Send a sample text to the selected printer using sunmi_printerx
+      await printer1.printText('Sample Test Print\n\n\n\n\n');
+      print('Test print sent to ${printer1.name}');
 
-      // Open the cash drawer for the selected printer
-      await printer.openCashDrawer(); // Correct method to open cash drawer
-      print('Cash drawer opened for ${printer.name}');
+      // Open the cash drawer for the selected printer using sunmi_printerx
+      await printer1.openCashDrawer(); // Correct method to open cash drawer
+      print('Cash drawer opened for ${printer1.name}');
     } catch (e) {
-      print('Failed to print or open drawer for ${printer.name}: $e');
+      print('Failed to print or open drawer for ${printer1.name}: $e');
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
