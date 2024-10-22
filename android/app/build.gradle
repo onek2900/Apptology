@@ -27,6 +27,7 @@ android {
         targetSdk = 33  // Set this explicitly
         versionCode = 1
         versionName = "1.0"
+        multiDexEnabled true
     }
 
     buildTypes {
@@ -42,4 +43,7 @@ android {
 
 flutter {
     source = "../.."  // The Flutter source path
+}
+dependencies {
+    implementation 'androidx.multidex:multidex:2.0.1'
 }

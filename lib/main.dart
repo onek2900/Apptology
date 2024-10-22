@@ -3,9 +3,10 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart'; // Web view for
 import 'package:postology/printer_management.dart';
 import 'package:postology/nearpay_paymentint.dart';
 import 'package:sunmi_printerx/sunmi_printerx.dart';
+import 'package:sunmi_printerx/sunmi_printerx_method_channel.dart';
 import 'models/printer_model.dart';
 import 'database/database_helper.dart';
-
+import 'theme/app_theme.dart';
 
 void main() {
   runApp(MyApp());
@@ -16,35 +17,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'POSTology',
-      theme: ThemeData(
-        brightness: Brightness.dark, // Set to dark theme
-        primaryColor: Colors.green, // Primary color for app elements
-        colorScheme: ColorScheme.dark(primary: Colors.green), // Use ColorScheme for the dark theme
-        scaffoldBackgroundColor: Colors.grey[900], // Dark gray background color
-        appBarTheme: AppBarTheme(
-          backgroundColor: Colors.grey[800], // AppBar background color
-          titleTextStyle: TextStyle(color: Colors.green, fontSize: 20), // AppBar title text style
-        ),
-        buttonTheme: ButtonThemeData(
-          buttonColor: Colors.green, // Button background color
-          textTheme: ButtonTextTheme.primary, // Button text color
-        ),
-        textTheme: TextTheme(
-          displayLarge: TextStyle(color: Colors.white), // Use displayLarge for main text
-          displayMedium: TextStyle(color: Colors.white), // Use displayMedium for secondary text
-          bodyLarge: TextStyle(color: Colors.white), // Use bodyLarge for regular text
-          bodyMedium: TextStyle(color: Colors.white), // Use bodyMedium for regular text
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: Colors.grey[800], // Input field background color
-          border: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.green), // Input field border color
-          ),
-          labelStyle: TextStyle(color: Colors.green), // Label text color
-          hintStyle: TextStyle(color: Colors.grey[400]), // Hint text color
-        ),
-      ),
+       theme: AppTheme.appTheme,
       home: Scaffold(
         body: MyHomePage(selectedIndex: 1, initialUrl: "https://apptologyinc.com"),
       ),
@@ -136,20 +109,7 @@ class _PortalPageState extends State<PortalPage> {
       appBar: AppBar(
         title: Row(
           mainAxisAlignment: MainAxisAlignment.start,
-          // Align content to the left
           crossAxisAlignment: CrossAxisAlignment.start,
-          // Align to the top
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 1.0),
-              // Add a single line space from the top
-              child: Image.asset(
-                'assets/POSTology.png', // Path to the image
-                width: 50.0, // Set width for the logo
-                height: 50.0, // Set height for the logo
-              ),
-            ),
-          ],
         ),
       ),
       body: InAppWebView(
@@ -162,21 +122,50 @@ class _PortalPageState extends State<PortalPage> {
             useHybridComposition: true, // Enable hybrid composition to avoid rendering issues
           ),
         ),
-          onConsoleMessage: (controller, consoleMessage) {
+        onWebViewCreated: (controller) {
+          webViewController = controller;
+        },
+        onConsoleMessage: (controller, consoleMessage) {
+          // Listen to messages sent from the web page console (e.g., print command)
           print("Console message: ${consoleMessage.message}");
-          // Assuming you want to print the message
-          _printToMainPrinter(consoleMessage.message); // Pass the message as content to print
-          },
 
+          // Check if the message contains the print request
+          if (consoleMessage.message.contains("print_request:open drawer")) {
+            final contentToPrint = consoleMessage.message.split("print_request:open drawer")[1].trim();
+            _printToMainPrinter(contentToPrint); // Pass the content to print
+          }
+        },
         onLoadStop: (controller, url) async {
-          print("Finished loading: $url");
 
-          // Inject JavaScript to trigger print request with content
-          controller.evaluateJavascript(source: '''
-            window.print = function() {
-              var contentToPrint = document.body.innerText || document.body.textContent; // Customize this to get the actual content to print
-              console.log("print_request:" + contentToPrint); // Send the content to the console for Flutter to capture
-            };
+              await controller.evaluateJavascript(source: '''
+        if (!window.printListenerAdded) {
+          window.addEventListener('beforeprint', function() {
+            var contentToPrint = document.body.innerText || document.body.textContent;
+            console.log("print_request:open drawer");
+          });
+    
+          window.printListenerAdded = true;
+        }
+      ''');
+          // Inject CSS for printing with a white background
+          await controller.evaluateJavascript(source: '''
+            var style = document.createElement('style');
+            style.innerHTML = `
+              @media print {
+                body {
+                  background-color: white !important;
+                  color: black !important;
+                }
+                * {
+                  box-shadow: none !important;
+                  background: none !important;
+                }
+                .no-print {
+                  display: none !important;
+                }
+              }
+            `;
+            document.head.appendChild(style);
           ''');
         },
       ),
@@ -184,29 +173,29 @@ class _PortalPageState extends State<PortalPage> {
   }
 
   Future<void> _printToMainPrinter(String contentToPrint) async {
-    PrinterModel? mainPrinter = await DatabaseHelper.instance.getMainPrinter();
+  PrinterModel? mainPrinter = await DatabaseHelper.instance.getMainPrinter();
 
-    if (mainPrinter != null) {
-      // Print on the main printer using the printerId and the content
-      try {
-        await printer.printText(
-          mainPrinter.printerId, // Pass the printerId here
-          contentToPrint, // Pass the content to print
-          textWidthRatio: 1, // Optional: You can adjust text width ratio
-          textHeightRatio: 1, // Optional: You can adjust text height ratio
-          bold: true, // Optional: If you want bold text
-        );
-        //await printer.openCashDrawer(); // Optional: Open the cash drawer after printing
-        print('Printed to main printer: ${mainPrinter.name}');
-      } catch (e) {
-        print('Error printing to main printer: $e');
+  if (mainPrinter != null) {
+    // Print on the main printer using the printerId and the content
+    try {
+      // Print the text
+
+      // Open the cash drawer for the selected printer
+      bool drawerOpened = await printer.openCashDrawer(mainPrinter.printerId);
+      if (drawerOpened) {
+        print('Cash drawer opened successfully for: ${mainPrinter.name}');
+      } else {
+        print('Failed to open cash drawer for: ${mainPrinter.name}');
       }
-    } else {
-      print('No main printer set in the database.');
+
+      print('Printed to main printer: ${mainPrinter.name}');
+    } catch (e) {
+      print('Error printing to main printer: $e');
     }
+  } else {
+    print('No main printer set in the database.');
   }
-
-
+}
 }
 
 // Settings page with URL input and three buttons
@@ -226,50 +215,12 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'POSTology',
-      theme: ThemeData(
-        brightness: Brightness.dark, // Set to dark theme
-        primaryColor: Colors.green, // Primary color for app elements
-        colorScheme: ColorScheme.dark(primary: Colors.green), // Use ColorScheme for the dark theme
-        scaffoldBackgroundColor: Colors.grey[900], // Dark gray background color
-        appBarTheme: AppBarTheme(
-          backgroundColor: Colors.grey[800], // AppBar background color
-          titleTextStyle: TextStyle(color: Colors.green, fontSize: 20), // AppBar title text style
-        ),
-        buttonTheme: ButtonThemeData(
-          buttonColor: Colors.green, // Button background color
-          textTheme: ButtonTextTheme.primary, // Button text color
-        ),
-        textTheme: TextTheme(
-          displayLarge: TextStyle(color: Colors.white), // Use displayLarge for main text
-          displayMedium: TextStyle(color: Colors.white), // Use displayMedium for secondary text
-          bodyLarge: TextStyle(color: Colors.white), // Use bodyLarge for regular text
-          bodyMedium: TextStyle(color: Colors.white), // Use bodyMedium for regular text
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: Colors.grey[800], // Input field background color
-          border: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.green), // Input field border color
-          ),
-          labelStyle: TextStyle(color: Colors.green), // Label text color
-          hintStyle: TextStyle(color: Colors.grey[400]), // Hint text color
-        ),
-      ),
+       theme: AppTheme.appTheme,
       home: Scaffold(
         appBar: AppBar(
           title: Row(
             mainAxisAlignment: MainAxisAlignment.start, // Align content to the left
             crossAxisAlignment: CrossAxisAlignment.start, // Align to the top
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 1.0), // Add a single line space from the top
-                child: Image.asset(
-                  'assets/POSTology.png', // Path to the image
-                  width: 50.0, // Set width for the logo
-                  height: 50.0, // Set height for the logo
-                ),
-              ),
-            ],
           ),
         ),
         body:Center(
