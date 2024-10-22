@@ -102,7 +102,7 @@ class PortalPage extends StatefulWidget {
 class _PortalPageState extends State<PortalPage> {
   SunmiPrinterX printer = SunmiPrinterX();
   InAppWebViewController? webViewController;
-
+  bool isitreceipt = false;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -130,23 +130,32 @@ class _PortalPageState extends State<PortalPage> {
           print("Console message: ${consoleMessage.message}");
 
           // Check if the message contains the print request
-          if (consoleMessage.message.contains("print_request:open drawer")) {
-            final contentToPrint = consoleMessage.message.split("print_request:open drawer")[1].trim();
-            _printToMainPrinter(contentToPrint); // Pass the content to print
+          if (consoleMessage.message.contains("postology:print_completed"))
+            {
+            final contentToPrint = consoleMessage.message.split("postology:print_completed")[1].trim();
+             bool isitreceipt = true;
+            _printToMainPrinter(isitreceipt, contentToPrint); // Pass the content to print
+          }
+
+          if (consoleMessage.message.contains("order_request:"))
+                {
+                  final contentToPrint = consoleMessage.message.split("order_request:")[1].trim();
+                  bool isitreceipt = false;
+                  _printToMainPrinter(isitreceipt, contentToPrint); // Pass the content to print
           }
         },
         onLoadStop: (controller, url) async {
+          // Inject JavaScript to add a `beforeprint` listener that captures the content and sends a console log
+          await controller.evaluateJavascript(source: '''
+          if (!window.printListenerAdded) {
+            window.addEventListener('beforeprint', function() {
+              var contentToPrint = document.body.innerText || document.body.textContent;
+                    console.log("order_request:" + contentToPrint);  // Send the content to Flutter
+            });
+             window.printListenerAdded = true;  // Ensure this listener is added only once
+          }
+          ''');
 
-              await controller.evaluateJavascript(source: '''
-        if (!window.printListenerAdded) {
-          window.addEventListener('beforeprint', function() {
-            var contentToPrint = document.body.innerText || document.body.textContent;
-            console.log("print_request:open drawer");
-          });
-    
-          window.printListenerAdded = true;
-        }
-      ''');
           // Inject CSS for printing with a white background
           await controller.evaluateJavascript(source: '''
             var style = document.createElement('style');
@@ -172,30 +181,50 @@ class _PortalPageState extends State<PortalPage> {
     );
   }
 
-  Future<void> _printToMainPrinter(String contentToPrint) async {
-  PrinterModel? mainPrinter = await DatabaseHelper.instance.getMainPrinter();
-
-  if (mainPrinter != null) {
-    // Print on the main printer using the printerId and the content
-    try {
-      // Print the text
-
-      // Open the cash drawer for the selected printer
-      bool drawerOpened = await printer.openCashDrawer(mainPrinter.printerId);
-      if (drawerOpened) {
-        print('Cash drawer opened successfully for: ${mainPrinter.name}');
+  Future<void> _printToMainPrinter(bool isitreceipt, String contentToPrint) async {
+    print("_printToMainPrinter " +  isitreceipt.toString()  + contentToPrint);
+    if (isitreceipt == true) {
+      PrinterModel? mainPrinter = await DatabaseHelper.instance.getMainPrinter();
+      print("_printToMainPrinter - TRY " + isitreceipt.toString() + (mainPrinter?.printerId ?? 'Unknown'));
+      if (mainPrinter != null) {
+        // Print on the main printer using the printerId and the content
+        try {
+          bool drawerOpened = await printer.openCashDrawer(mainPrinter.printerId);
+          if (drawerOpened) {
+            print('Cash drawer opened successfully for: ${mainPrinter.name}');
+          } else {
+            print('Failed to open cash drawer for: ${mainPrinter.name}');
+          }
+          print('Printed to main printer: ${mainPrinter.name}');
+        } catch (e) {
+          print('Error printing to main printer: $e');
+        }
       } else {
-        print('Failed to open cash drawer for: ${mainPrinter.name}');
+        print('No main printer set in the database.');
       }
+    } else {
+      PrinterModel? secPrinter = await DatabaseHelper.instance.getSecPrinter();
+      print("_printToMainPrinter - TRY Sec " + isitreceipt.toString() + (secPrinter?.printerId ?? 'Unknown'));
+      if (secPrinter != null) {
+        try {
+          await printer.printText(
+            secPrinter.printerId,
+            contentToPrint,
+            textWidthRatio: 1,
+            textHeightRatio: 1,
+            bold: true,
+          );
+          print('Printed to secondary printer: ${secPrinter.name} \n'
+              '${contentToPrint}');
 
-      print('Printed to main printer: ${mainPrinter.name}');
-    } catch (e) {
-      print('Error printing to main printer: $e');
+        } catch (e) {
+          print('Error printing to secondary printer: $e');
+        }
+      } else {
+        print('No secondary printer set in the database.');
+      }
     }
-  } else {
-    print('No main printer set in the database.');
   }
-}
 }
 
 // Settings page with URL input and three buttons
