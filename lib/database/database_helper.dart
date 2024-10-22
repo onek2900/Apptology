@@ -77,6 +77,18 @@ class DatabaseHelper {
     return null;
   }
 
+  Future<PrinterModel?> getSecPrinter() async {
+    Database db = await instance.database;
+    // Assuming secondary printers have 'isMain = 0'
+    var res = await db.query(table, where: 'isMain = ?', whereArgs: [0]);
+
+    if (res.isNotEmpty) {
+      return PrinterModel.fromMap(res.first);
+    }
+    return null; // Return null if no secondary printer is found
+  }
+
+
   // Set printer as the main printer
   Future<void> setAsMainPrinter(int id) async {
     Database db = await instance.database;
