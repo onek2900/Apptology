@@ -51,38 +51,46 @@ class _PrinterManagementPageState extends State<PrinterManagementPage> {
   }
 
   // Store all printers into the database after clearing the previous entries
+  // Store all printers into the database, only updating if necessary
   Future<void> _storeAllPrintersInDatabase() async {
-
     try {
-      // Delete all previous entries before adding new ones
-      await DatabaseHelper.instance.deleteAllPrinters();
+      // Ensure the database is initialized before storing printers
+      Database db = await DatabaseHelper.instance.database;
 
-      // Loop through the list of printers and store each one
-      for (int i = 0; i < printerList.length; i++) {
-        Printer printer = printerList[i];
-        String category = categoryControllers[i].text;
+      // Proceed with the operation only if the database is ready
+      if (db.isOpen) {
+        // Delete all previous entries before adding new ones
+        await DatabaseHelper.instance.deleteAllPrinters();
 
-        // Ensure category is not empty, set a default if required
-        if (category.isEmpty) {
-          category = 'Uncategorized'; // Default category if none is provided
+        // Loop through the list of printers and store each one
+        for (int i = 0; i < printerList.length; i++) {
+          Printer printer = printerList[i];
+          String category = categoryControllers[i].text;
+
+          // Ensure category is not empty, set a default if required
+          if (category.isEmpty) {
+            category = 'Uncategorized'; // Default category if none is provided
+          }
+
+          PrinterModel printerModel = PrinterModel(
+            name: printer.name!,
+            category: category,
+            printerId: printer.id!,
+            isMain: selectedMainPrinterIndex == i, // Set this as the main printer if selected
+          );
+
+          // Insert the printer into the database
+          await DatabaseHelper.instance.insertPrinter(printerModel);
+          print('Printer ${printer.name} stored in database');
         }
 
-        PrinterModel printerModel = PrinterModel(
-          name: printer.name!,
-          category: category,
-          printerId: printer.id!,
-          isMain: selectedMainPrinterIndex == i, // Set this as the main printer if selected
+        // Show a success message after storing all printers
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('All printers have been stored successfully!')),
         );
-
-        // Insert the printer into the database
-        await DatabaseHelper.instance.insertPrinter(printerModel);
-        print('Printer ${printer.name} stored in database');
+      } else {
+        throw Exception('Database is closed.');
       }
-
-      // Show a success message after storing all printers
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('All printers have been stored successfully!')),
-      );
     } catch (e) {
       // Handle any errors during storage
       print('Error storing printers: $e');
@@ -91,6 +99,8 @@ class _PrinterManagementPageState extends State<PrinterManagementPage> {
       );
     }
   }
+
+
 
   // Set the selected printer as the main printer and update the database
   Future<void> _setAsMainPrinter(int index) async {
@@ -210,7 +220,7 @@ class _PrinterManagementPageState extends State<PrinterManagementPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton(
-                  onPressed: _storeAllPrintersInDatabase, // Store printers in the database
+                  onPressed: _storeAllPrintersInDatabase, // Store printers when button is pressed
                   child: Text('Store Printers'),
                 ),
                 SizedBox(width: 20),
