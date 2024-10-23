@@ -1,5 +1,6 @@
-import 'dart:async';
+import 'dart:io';
 import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import '../models/printer_model.dart'; // Import your PrinterModel class
 
@@ -17,11 +18,12 @@ class DatabaseHelper {
     _database = await _initDatabase();  // Initialize database if it's null or closed
     return _database!;
   }
-  _initDatabase() async {
-    String path = join(await getDatabasesPath(), _databaseName);
-    var resultint = await openDatabase(path, version: _databaseVersion, onCreate: _onCreate);
-    _isTableExists;
-    return resultint;
+
+  Future<Database> _initDatabase() async {
+    Directory? appDir = await getExternalStorageDirectory(); // Get external storage directory
+    String path = join(appDir!.path, _databaseName); // Custom path for the database file
+    print("Database path: $path"); // Debugging, print the path where the DB is saved
+    return await openDatabase(path, version: _databaseVersion, onCreate: _onCreate);
   }
 
   Future _onCreate(Database db, int version) async {
@@ -42,6 +44,17 @@ class DatabaseHelper {
     return await db.insert(table, printer.toMap());
   }
 
+  // Update printer information in the database
+  Future<int> updatePrinter(PrinterModel printer) async {
+    Database db = await instance.database;
+    return await db.update(
+      table,
+      printer.toMap(),
+      where: 'id = ?',
+      whereArgs: [printer.id],
+    );
+  }
+
   // Fetch all printers from the database
   Future<List<PrinterModel>> getAllPrinters() async {
     Database db = await instance.database;
@@ -51,83 +64,30 @@ class DatabaseHelper {
         : [];
     return printerList;
   }
-  Future<bool> _isTableExists(Database db, String tableName) async {
+
+  // Fetch printer by category from the database
+  Future<PrinterModel?> getPrinterByCategory(String categoryId) async {
     Database db = await instance.database;
-    var res = await db.rawQuery("SELECT name FROM sqlite_master WHERE type='table' AND name='$tableName'");
-    print(res);
-    return res.isNotEmpty;
+    var res = await db.query(
+      table,
+      where: 'category = ?',
+      whereArgs: [categoryId],
+    );
+
+    if (res.isNotEmpty) {
+      return PrinterModel.fromMap(res.first);
+    }
+    return null; // Return null if no printer with the category is found
   }
+
+
   // Delete all printers from the database
   Future<void> deleteAllPrinters() async {
     Database db = await instance.database;
-    bool tableExists = await _isTableExists(db, table); // Check if the table exists
-    if (tableExists) {
-      await db.delete(table); // Delete all printers if the table exists
-    } else {
-      await _initDatabase(); // If the table doesn't exist, initialize the database
-    }
-  }
-
-  Future<PrinterModel?> getMainPrinter() async {
-    Database db = await instance.database;
-    var res = await db.query(table, where: 'isMain = ?', whereArgs: [1]);
-    if (res.isNotEmpty) {
-      return PrinterModel.fromMap(res.first);
-    }
-    return null;
-  }
-
-  Future<PrinterModel?> getSecPrinter() async {
-    Database db = await instance.database;
-    // Assuming secondary printers have 'isMain = 0'
-    var res = await db.query(table, where: 'isMain = ?', whereArgs: [0]);
-
-    if (res.isNotEmpty) {
-      return PrinterModel.fromMap(res.first);
-    }
-    return null; // Return null if no secondary printer is found
+    await db.delete(table); // Deletes all records from the printer table
+    print("All printers deleted from the database");
   }
 
 
-  // Set printer as the main printer
-  Future<void> setAsMainPrinter(int id) async {
-    Database db = await instance.database;
-    await db.update(table, {'isMain': 0}, where: 'isMain = 1'); // Clear previous main
-    await db.update(table, {'isMain': 1}, where: 'id = ?', whereArgs: [id]);
-  }
-
-  // Clear main printer status
-  Future<void> clearMainPrinter() async {
-    Database db = await instance.database;
-    await db.update(table, {'isMain': 0});
-  }
-
-  // Method to unset the current main printer
-  Future<void> unsetMainPrinter() async {
-    Database db = await instance.database;
-    await db.update(
-      table,
-      {'isMain': 0}, // Set isMain to 0 for all printers
-    );
-  }
-
-  Future<void> setMainPrinter(String printerId) async {
-    Database db = await instance.database;
-    await unsetMainPrinter(); // First unset all printers
-
-    // Set the selected printer as the main one
-    await db.update(
-      table,
-      {'isMain': 1},
-      where: 'printerId = ?',
-      whereArgs: [printerId],
-    );
-  }
-
-// Function to delete the database
-  Future<void> deleteDatabaseFile() async {
-    String path = join(await getDatabasesPath(), _databaseName);
-    await deleteDatabase(path); // Correctly pass the path argument here
-  }
-
+// Other CRUD operations...
 }
