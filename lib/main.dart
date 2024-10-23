@@ -98,11 +98,11 @@ class PortalPage extends StatefulWidget {
   @override
   _PortalPageState createState() => _PortalPageState();
 }
-
 class _PortalPageState extends State<PortalPage> {
   SunmiPrinterX printer = SunmiPrinterX();
   InAppWebViewController? webViewController;
   bool isitreceipt = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -126,36 +126,48 @@ class _PortalPageState extends State<PortalPage> {
           webViewController = controller;
         },
         onConsoleMessage: (controller, consoleMessage) {
-          // Listen to messages sent from the web page console (e.g., print command)
-          print("Console message: ${consoleMessage.message}");
+          // Initialize variables for storing printer data and order information
+          String printername = "";
+          List<String> consoleLogs = [];
 
-          // Check if the message contains the print request
-          if (consoleMessage.message.contains("postology:print_completed"))
-            {
-            final contentToPrint = consoleMessage.message.split("postology:print_completed")[1].trim();
-             bool isitreceipt = true;
-            _printToMainPrinter(isitreceipt, contentToPrint); // Pass the content to print
+          // Check if the message is an order start
+          if (consoleMessage.message.contains("Order Start")) {
+            print("Order received");
           }
 
-          if (consoleMessage.message.contains("order_request:"))
-                {
-                  final contentToPrint = consoleMessage.message.split("order_request:")[1].trim();
-                  bool isitreceipt = false;
-                  _printToMainPrinter(isitreceipt, contentToPrint); // Pass the content to print
+          // Check if the message contains printer information
+          if (consoleMessage.message.contains("Printer:")) {
+            printername = consoleMessage.message.split("Printer:")[1].trim();
+            print("Printer identified: $printername");
+          }
+
+          // Extract and store other order details
+          if (consoleMessage.message.contains("Cashier:") ||
+              consoleMessage.message.contains("Order Number:") ||
+              consoleMessage.message.contains("\t")) {
+            consoleLogs.add(consoleMessage.message);
+          }
+
+          // Once "Order Completed" is received, trigger the print function
+          if (consoleMessage.message.contains("Order Completed")) {
+            if (printername.isNotEmpty) {
+              _printToMainPrinter(false, printername, consoleLogs);  // Call the print function with the collected logs
+            } else {
+              print("No printer found for the order.");
+            }
+
+            // Clear variables after processing
+            printername = '';
+            consoleLogs = [];
+          }
+
+          // Handle print_completed message
+          if (consoleMessage.message.contains("postology:print_completed")) {
+            _printToMainPrinter(true, 'main', []); // Just opening the cash drawer
           }
         },
-        onLoadStop: (controller, url) async {
-          // Inject JavaScript to add a `beforeprint` listener that captures the content and sends a console log
-          await controller.evaluateJavascript(source: '''
-          if (!window.printListenerAdded) {
-            window.addEventListener('beforeprint', function() {
-              var contentToPrint = document.body.innerText || document.body.textContent;
-                    console.log("order_request:" + contentToPrint);  // Send the content to Flutter
-            });
-             window.printListenerAdded = true;  // Ensure this listener is added only once
-          }
-          ''');
 
+        onLoadStop: (controller, url) async {
           // Inject CSS for printing with a white background
           await controller.evaluateJavascript(source: '''
             var style = document.createElement('style');
@@ -181,47 +193,53 @@ class _PortalPageState extends State<PortalPage> {
     );
   }
 
-  Future<void> _printToMainPrinter(bool isitreceipt, String contentToPrint) async {
-    print("_printToMainPrinter " +  isitreceipt.toString()  + contentToPrint);
-    if (isitreceipt == true) {
-      PrinterModel? mainPrinter = await DatabaseHelper.instance.getMainPrinter();
-      print("_printToMainPrinter - TRY " + isitreceipt.toString() + (mainPrinter?.printerId ?? 'Unknown'));
-      if (mainPrinter != null) {
-        // Print on the main printer using the printerId and the content
-        try {
-          bool drawerOpened = await printer.openCashDrawer(mainPrinter.printerId);
-          if (drawerOpened) {
-            print('Cash drawer opened successfully for: ${mainPrinter.name}');
-          } else {
-            print('Failed to open cash drawer for: ${mainPrinter.name}');
-          }
-          print('Printed to main printer: ${mainPrinter.name}');
-        } catch (e) {
-          print('Error printing to main printer: $e');
-        }
-      } else {
-        print('No main printer set in the database.');
+  Future<void> _printToMainPrinter(bool isitreceipt, String categoryId, List<String> consoleLogs) async {
+    // Prepare a buffer for the content to be printed
+    StringBuffer contentToPrint = StringBuffer();
+
+    // Iterate over the console logs and format them accordingly
+    for (String log in consoleLogs) {
+      // Skip the "Order Start" and "Order Completed" messages
+      if (log.contains('Order Start') || log.contains('Order Completed')) {
+        continue;
       }
-    } else {
-      PrinterModel? secPrinter = await DatabaseHelper.instance.getSecPrinter();
-      print("_printToMainPrinter - TRY Sec " + isitreceipt.toString() + (secPrinter?.printerId ?? 'Unknown'));
-      if (secPrinter != null) {
+      // Add the relevant data to the buffer
+      contentToPrint.writeln(log);
+      print("data captured :  ");
+
+    }
+    PrinterModel? selectedPrinter = await DatabaseHelper.instance.getPrinterByCategory(categoryId);
+    // Check if it's a receipt or a normal print task
+    if (isitreceipt==false) {
+      print("order recieved");
+      if (selectedPrinter != null) {
+        print("printer is selected");
         try {
           await printer.printText(
-            secPrinter.printerId,
-            contentToPrint,
-            textWidthRatio: 1,
-            textHeightRatio: 1,
+            selectedPrinter.printerId,
+            contentToPrint.toString(),
+            textWidthRatio: 1, // Adjust text size
+            textHeightRatio: 1, // Adjust text size
             bold: true,
           );
-          print('Printed to secondary printer: ${secPrinter.name} \n'
-              '${contentToPrint}');
-
+          print('Printed to printer: ${selectedPrinter.name} for category ${categoryId} \n${contentToPrint.toString()}');
         } catch (e) {
-          print('Error printing to secondary printer: $e');
+          print('Error printing to category printer: $e');
         }
       } else {
-        print('No secondary printer set in the database.');
+        print('No printer found for category: $categoryId.');
+      }
+    } else {
+      if (selectedPrinter != null) {
+        print("printer is selected");
+        try {
+          print('drawer open to: $categoryId');
+          await printer.openCashDrawer(selectedPrinter.printerId);
+          print('Cash drawer opened successfully.');
+          print('Printed to printer: ${selectedPrinter.name} for category ${categoryId} \n${contentToPrint.toString()}');
+        } catch (e) {
+          print('Error opening cash drawer: $e');
+        }
       }
     }
   }
