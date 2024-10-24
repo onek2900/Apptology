@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart'; // Web view for the portal
 import 'package:postology/printer_management.dart';
-// import 'package:postology/nearpay_paymentint.dart';
+//import 'package:postology/nearpay_paymentint.dart';
 import 'package:sunmi_printerx/sunmi_printerx.dart';
 import 'models/printer_model.dart';
 import 'database/database_helper.dart';
@@ -295,6 +295,9 @@ class _PortalPageState extends State<PortalPage> {
       }
     } catch (e) {
       print('Error during printing or cash drawer operation: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to print: $e'))
+      );
     }
   }
 
