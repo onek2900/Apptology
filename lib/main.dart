@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart'; // Web view for the portal
 import 'package:postology/printer_management.dart';
-//import 'package:postology/nearpay_paymentint.dart';
+import 'package:postology/nearpay_paymentint.dart';
 import 'package:sunmi_printerx/sunmi_printerx.dart';
 import 'models/printer_model.dart';
 import 'database/database_helper.dart';
 import 'theme/app_theme.dart';
 import 'dart:typed_data';
 import 'package:postology/models/ClearHelper.dart';
+import 'package:postology/nearpay_service.dart';
+
 
 void main() {
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -103,6 +106,9 @@ class _PortalPageState extends State<PortalPage> {
   SunmiPrinterX printer = SunmiPrinterX();
   InAppWebViewController? webViewController;
   bool isitreceipt = false;
+  final NearpayService nearpayService = NearpayService(); // Create an instance of your service class
+
+
   // Create a map to store order data by order number
   Map<String, Map<String, dynamic>> orders = {};
   List<String> orderlineParts = [];
@@ -196,7 +202,9 @@ class _PortalPageState extends State<PortalPage> {
 
               // Now print to printer if the printer name exists
               if (printername != null && orderlineParts != null) {
-                _printToPrinter(false, printername,cashiername,orderNumber, orderlineParts.cast<List<String>>()); // Cast to List<List<String>>
+                _printToPrinter(false, printername, cashiername, orderNumber,
+                    orderlineParts.cast<
+                        List<String>>()); // Cast to List<List<String>>
               } else {
                 print("No printer or orderlines found for the order.");
               }
@@ -208,9 +216,18 @@ class _PortalPageState extends State<PortalPage> {
 
           // Handle print_completed message
           if (message.contains("postology:print_completed")) {
-            _printToPrinter(true, 'main','','', []); // Just opening the cash drawer
+            _printToPrinter(
+                true, 'main', '', '', []); // Just opening the cash drawer
           }
-          },
+
+          // Handle print_completed message
+          if (message.contains("nearpay:")) {
+            String paymentdetails = message.split(":")[2].trim();
+            double amountdouble = double.parse(paymentdetails);
+            int amountint = (amountdouble * 100).toInt();
+            nearpayService.makePurchase(amount: amountint, customerReferenceNumber: '123'); // Just opening the cash drawer
+          }
+        },
         onLoadStop: (controller, url) async {
           // Inject CSS for printing with a white background
           await controller.evaluateJavascript(source: '''
@@ -237,7 +254,9 @@ class _PortalPageState extends State<PortalPage> {
     );
   }
 
-  Future<void> _printToPrinter(bool isitreceipt, String categoryId, String _Cashername, String _ordernumer, List<List<String>> orderlines) async {
+  Future<void> _printToPrinter(bool isitreceipt, String categoryId,
+      String _Cashername, String _ordernumer,
+      List<List<String>> orderlines) async {
     // Prepare a buffer for the content to be printed
     StringBuffer contentToPrint = StringBuffer();
     StringBuffer contentToPrinttitle = StringBuffer();
@@ -252,7 +271,6 @@ class _PortalPageState extends State<PortalPage> {
     contentToPrinttitle.writeln("category\tName\t\t\tquantity");
 
 
-
     for (List<String> orderline in orderlines) {
       if (orderline.length == 3) {
         String category = orderline[0];
@@ -260,13 +278,15 @@ class _PortalPageState extends State<PortalPage> {
         String quantity = orderline[2];
         // Format the order details
         contentToPrint.writeln("$category\t\t$productName\t\t$quantity\n");
-        print("Orderline captured: Category: $category, Item: $productName, Quantity: $quantity");
+        print(
+            "Orderline captured: Category: $category, Item: $productName, Quantity: $quantity");
       } else {
         print("Invalid order line format: $orderline");
       }
     }
     // Check for selected printer
-    PrinterModel? selectedPrinter = await DatabaseHelper.instance.getPrinterByCategory(categoryId);
+    PrinterModel? selectedPrinter = await DatabaseHelper.instance
+        .getPrinterByCategory(categoryId);
 
     if (selectedPrinter == null) {
       print("No printer found for category: $categoryId.");
@@ -305,8 +325,10 @@ class _PortalPageState extends State<PortalPage> {
           textHeightRatio: 0, // Adjust text size
           bold: false,
         );
-        print('Printed to printer: ${selectedPrinter.name} for category ${categoryId} \n${contentToPrint.toString()}');
-        await printer.printEscPosCommands(selectedPrinter.printerId, Uint8List.fromList([0x1D, 0x56, 0x42, 0x00]));
+        print('Printed to printer: ${selectedPrinter
+            .name} for category ${categoryId} \n${contentToPrint.toString()}');
+        await printer.printEscPosCommands(selectedPrinter.printerId,
+            Uint8List.fromList([0x1D, 0x56, 0x42, 0x00]));
 
         //if (contentToPrint.toString().contains('Order Completed')) {
         //  await printer.printEscPosCommands(selectedPrinter.printerId, Uint8List.fromList([0x1D, 0x56, 0x42, 0x00]));
@@ -323,6 +345,7 @@ class _PortalPageState extends State<PortalPage> {
       );
     }
   }
+
 
 
 }
@@ -418,9 +441,9 @@ class _SettingsPageState extends State<SettingsPage> {
                         child: ElevatedButton(
                           onPressed: () {
                             // Uncomment and use once NearpayPaymentint page is available
-                            // Navigator.of(context).push(
-                            //   MaterialPageRoute(builder: (context) => NearpayPaymentint()),
-                            // );
+                             Navigator.of(context).push(
+                               MaterialPageRoute(builder: (context) => NearpayPaymentint()),
+                            );
                           },
                           child: Text('Payment'),
                         ),
