@@ -83,6 +83,12 @@ class SunmiPrinterX {
     return printerStatusFromString(result);
   }
 
+  Future<PrinterStatus> getPrinterStatus(String printerId) async {
+    final result =
+    await SunmiPrinterXPlatform.instance.getPrinterStatus(printerId);
+    return printerStatusFromString(result);
+  }
+
   Future<bool> _openCashDrawer(String printerId) {
     return SunmiPrinterXPlatform.instance.openCashDrawer(printerId);
   }
@@ -93,6 +99,11 @@ class SunmiPrinterX {
   }
 
   Future<void> _printEscPosCommands(String printerId, Uint8List commands) {
+    return SunmiPrinterXPlatform.instance
+        .printEscPosCommands(printerId, commands);
+  }
+
+  Future<void> printEscPosCommands(String printerId, Uint8List commands) {
     return SunmiPrinterXPlatform.instance
         .printEscPosCommands(printerId, commands);
   }
@@ -148,9 +159,6 @@ class SunmiPrinterX {
       italic: italic,
       align: align,
     );
-
-    // Await the ESC/POS command to cut the paper after printing
-    await _printEscPosCommands(printerId, Uint8List.fromList([0x1D, 0x56, 0x42, 0x00]));
   }
 
 
@@ -175,8 +183,6 @@ class SunmiPrinterX {
         columnAligns: columnAligns
     );
 
-    // Await the ESC/POS command to cut the paper after printing
-    await _printEscPosCommands(printerId, Uint8List.fromList([0x1D, 0x56, 0x42, 0x00]));
   }
 
 

@@ -1,3 +1,4 @@
+/**
 import 'package:flutter/material.dart';
 import 'package:nearpay_flutter_sdk/nearpay.dart';
 
@@ -77,3 +78,4 @@ class _NearpayPaymentintState extends State<NearpayPaymentint> {
     );
   }
 }
+ */

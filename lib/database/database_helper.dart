@@ -73,7 +73,6 @@ class DatabaseHelper {
       where: 'category = ?',
       whereArgs: [categoryId],
     );
-
     if (res.isNotEmpty) {
       return PrinterModel.fromMap(res.first);
     }
