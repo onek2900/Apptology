@@ -7,6 +7,7 @@ import 'models/printer_model.dart';
 import 'database/database_helper.dart';
 import 'theme/app_theme.dart';
 import 'dart:typed_data';
+import 'package:postology/models/ClearHelper.dart';
 
 void main() {
   runApp(MyApp());
@@ -338,6 +339,7 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   TextEditingController _urlController = TextEditingController();
+  final ClearDataHelper clearDataHelper = ClearDataHelper();
 
   @override
   Widget build(BuildContext context) {
@@ -461,7 +463,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   // Method to clear cookies and history
   void _clearCookiesAndHistory() async {
-    await CookieManager.instance().deleteAllCookies(); // Clear all cookies
+    await clearDataHelper.clearAllData();
     print('Cookies cleared.');
   }
 }

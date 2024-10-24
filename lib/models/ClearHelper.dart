@@ -3,15 +3,15 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart'; // For WebView 
 import 'package:shared_preferences/shared_preferences.dart'; // For clearing shared preferences
 import 'package:path_provider/path_provider.dart'; // For getting app cache directory
 import 'dart:io'; // For file operations
+import 'package:flutter_inappwebview/flutter_inappwebview.dart'; // Web view for the portal
+import 'package:postology/database/database_helper.dart';
+
 
 class ClearDataHelper {
   // Method to clear cookies, cache, shared preferences, and files
   Future<void> clearAllData() async {
     // Clear cookies
     await _clearCookies();
-
-    // Clear WebView cache
-    await _clearWebViewCache();
 
     // Clear shared preferences
     await _clearSharedPreferences();
@@ -22,6 +22,10 @@ class ClearDataHelper {
     // Clear local databases (if applicable)
     await _clearDatabase();
 
+    // Clear local databases (if applicable)
+
+
+
     print('All application data has been cleared.');
   }
 
@@ -31,16 +35,6 @@ class ClearDataHelper {
     print('Cookies cleared.');
   }
 
-  // Method to clear WebView cache
-  Future<void> _clearWebViewCache() async {
-    try {
-      final controller = InAppWebViewController(); // Initialize the controller
-      await controller.clearCache(); // Clear WebView cache
-      print('WebView cache cleared.');
-    } catch (e) {
-      print('Error clearing WebView cache: $e');
-    }
-  }
 
   // Method to clear shared preferences
   Future<void> _clearSharedPreferences() async {
@@ -65,8 +59,7 @@ class ClearDataHelper {
   // Method to clear the database (e.g., SQLite)
   Future<void> _clearDatabase() async {
     try {
-      // Replace this with your database deletion logic
-      // Example for SQLite: await deleteDatabase('your_database_name.db');
+      await DatabaseHelper.instance.deleteAllPrinters();
       print('Database cleared.');
     } catch (e) {
       print('Error clearing database: $e');
