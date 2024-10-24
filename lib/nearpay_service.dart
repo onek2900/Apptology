@@ -47,7 +47,6 @@ class NearpayService {
       await nearpay.initialize();
       await nearpay.purchase(
         amount: amount,
-        transactionId: '94fa0134-df2d-4006-8159-e4d66f82b38b',
         customerReferenceNumber: customerReferenceNumber,
         enableReceiptUi: enableReceiptUi,
         enableReversalUi: enableReversalUi,
