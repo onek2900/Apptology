@@ -117,12 +117,11 @@ class _PrinterManagementPageState extends State<PrinterManagementPage> {
   Future<void> _testPrintAndOpenDrawer(PrinterModel printer1, String category) async {
     try {
       print('Test print sent to printer with ID ${printer1.printerId}');
-
       await printer.printText(printer1.printerId.toString(),'Sample Test Print\n\n\n\n\n'); // Pass printerId
-
       // Open the cash drawer using the printer ID
-      await printer.openCashDrawer(printer1.printerId); // Pass printerId
       print('Cash drawer opened for printer with ID ${printer1.printerId}');
+      await printer.openCashDrawer(printer1.printerId.toString()); // Pass printerId
+
     } catch (e) {
       print('Failed to print or open drawer for printer with ID ${printer1.printerId}: $e');
     }

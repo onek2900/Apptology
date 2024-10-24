@@ -7,6 +7,8 @@ plugins {
 
 android {
     namespace = "com.postology.postology"
+    namespace 'io.nearpay.nearpay_flutter_sdk' // Add your actual package name here
+
     compileSdk = 34  // Explicitly set the compile SDK version
 
     ndkVersion = "25.1.8937393"  // Use a valid NDK version, or remove if not needed
