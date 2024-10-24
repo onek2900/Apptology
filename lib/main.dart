@@ -209,6 +209,28 @@ class _PortalPageState extends State<PortalPage> {
           if (message.contains("postology:print_completed")) {
             _printToPrinter(true, 'main','','', []); // Just opening the cash drawer
           }
+          },
+        onLoadStop: (controller, url) async {
+          // Inject CSS for printing with a white background
+          await controller.evaluateJavascript(source: '''
+            var style = document.createElement('style');
+            style.innerHTML = `
+              @media print {
+                body {
+                  background-color: white !important;
+                  color: black !important;
+                }
+                * {
+                  box-shadow: none !important;
+                  background: none !important;
+                }
+                .no-print {
+                  display: none !important;
+                }
+              }
+            `;
+            document.head.appendChild(style);
+          ''');
         },
       ),
     );
@@ -321,7 +343,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'POSTology',
-       theme: AppTheme.appTheme,
+      theme: AppTheme.appTheme,
       home: Scaffold(
         appBar: AppBar(
           title: Row(
@@ -329,91 +351,100 @@ class _SettingsPageState extends State<SettingsPage> {
             crossAxisAlignment: CrossAxisAlignment.start, // Align to the top
           ),
         ),
-        body:Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center, // Center the Row contents
+        body: SingleChildScrollView( // Enable scrolling if content overflows
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height, // Set min height to the screen height
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center, // Ensure content stays in the center
+                crossAxisAlignment: CrossAxisAlignment.center, // Center content horizontally
                 children: [
-                  // Set the width of the TextField to fit approximately 20 characters
-                  Container(
-                    width: 400, // Adjust this value as needed for desired width
-                    child: TextField(
-                      controller: _urlController,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: 'Enter your company name',
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center, // Center the Row contents
+                    children: [
+                      Container(
+                        width: 400, // Adjust this value as needed for desired width
+                        child: TextField(
+                          controller: _urlController,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+                            labelText: 'Enter your company name',
+                          ),
+                          onSubmitted: (newUrl) {
+                            _setUrlAndSwitch(newUrl); // Update the URL and switch to the portal
+                          },
+                        ),
                       ),
-                      onSubmitted: (newUrl) {
-                        _setUrlAndSwitch(newUrl); // Update the URL and switch to the portal
-                      },
-                    ),
+                      SizedBox(width: 10), // Add space between TextField and text
+                      Text(
+                        '.postology.cloud', // Text to display
+                        style: TextStyle(
+                          color: Colors.green, // Set text color
+                          fontWeight: FontWeight.bold, // Bold text
+                        ),
+                      ),
+                      SizedBox(width: 10), // Add space between text and button
+                      ElevatedButton(
+                        onPressed: () {
+                          String url = _urlController.text.trim();
+                          _setUrlAndSwitch(url); // Update the URL and switch to the portal
+                        },
+                        child: Text('Enter'),
+                      ),
+                    ],
                   ),
-                  SizedBox(width: 10), // Add space between TextField and text
-                  Text(
-                    '.postology.cloud', // Text to display
-                    style: TextStyle(
-                      color: Colors.green, // Set text color
-                      fontWeight: FontWeight.bold, // Bold text
-                    ),
-                  ),
-                  SizedBox(width: 10), // Add space between text and button
-                  ElevatedButton(
-                    onPressed: () {
-                      String url = _urlController.text.trim();
-                      _setUrlAndSwitch(url); // Update the URL and switch to the portal
-                    },
-                    child: Text('Enter'),
-                  ),
-                ],
-              ),
-              SizedBox(height: 20),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center, // Center the Column contents
-                children: [
-                  Container(
-                    width: 200, // Set width of the button
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // Navigate to PrinterManagementPage when the button is pressed
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (context) => PrinterManagementPage()),
-                        );
-                      },
-                      child: Text('Printers'),
-                    ),
-                  ),
-                  SizedBox(height: 10), // Add space between buttons
-                  Container(
-                    width: 200, // Set width of the button
-                    child: ElevatedButton(
-                      onPressed: () {
-                        //Navigator.of(context).push(
-                          //MaterialPageRoute(builder: (context) => NearpayPaymentint()), // Navigate to NearpayPage
-                        //);
-                      },
-                      child: Text('Payment'),
-                    ),
-                  ),
-                  SizedBox(height: 10), // Add space between buttons
-                  Container(
-                    width: 200, // Set width of the button
-                    child: ElevatedButton(
-                      onPressed: () {
-                        _clearCookiesAndHistory(); // Clear cookies and history when pressed
-                      },
-                      child: Text('Rest'),
-                    ),
+                  SizedBox(height: 20), // Add space between rows
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center, // Center the Column contents
+                    children: [
+                      Container(
+                        width: 200, // Set width of the button
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (context) => PrinterManagementPage()),
+                            );
+                          },
+                          child: Text('Printers'),
+                        ),
+                      ),
+                      SizedBox(height: 10), // Add space between buttons
+                      Container(
+                        width: 200, // Set width of the button
+                        child: ElevatedButton(
+                          onPressed: () {
+                            // Uncomment and use once NearpayPaymentint page is available
+                            // Navigator.of(context).push(
+                            //   MaterialPageRoute(builder: (context) => NearpayPaymentint()),
+                            // );
+                          },
+                          child: Text('Payment'),
+                        ),
+                      ),
+                      SizedBox(height: 10), // Add space between buttons
+                      Container(
+                        width: 200, // Set width of the button
+                        child: ElevatedButton(
+                          onPressed: () {
+                            _clearCookiesAndHistory(); // Clear cookies and history when pressed
+                          },
+                          child: Text('Rest'),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
+
+
 
   // New method to update URL, append postology.cloud, and switch to portal tab
   void _setUrlAndSwitch(String url) {
