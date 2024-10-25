@@ -201,7 +201,7 @@ class _PortalPageState extends State<PortalPage> {
               List<dynamic>? orderlineParts = currentOrder["orderlines"];
 
               // Now print to printer if the printer name exists
-              if (printername != null && orderlineParts != null) {
+              if (orderlineParts != null) {
                 _printToPrinter(false, printername, cashiername, orderNumber,
                     orderlineParts.cast<
                         List<String>>()); // Cast to List<List<String>>
