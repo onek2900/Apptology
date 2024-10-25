@@ -1,9 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart'; // For WebView cache and cookies
 import 'package:shared_preferences/shared_preferences.dart'; // For clearing shared preferences
 import 'package:path_provider/path_provider.dart'; // For getting app cache directory
-import 'dart:io'; // For file operations
-import 'package:flutter_inappwebview/flutter_inappwebview.dart'; // Web view for the portal
+// For file operations
+// Web view for the portal
 import 'package:postology/database/database_helper.dart';
 
 

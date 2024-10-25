@@ -1,19 +1,17 @@
 import 'package:nearpay_flutter_sdk/nearpay.dart';
-import 'package:nearpay_flutter_sdk/errors/purchase_error/purchase_error.dart';
-import 'package:nearpay_flutter_sdk/util/util.dart';
 
 class NearpayService {
   late Nearpay nearpay;
 
   // Constructor to initialize NearpayService with authentication details
-  NearpayService() {
-    nearpay = Nearpay(
-      authType: AuthenticationType.login,
-      authValue: " ",
-      env: Environments.sandbox,
-      locale: Locale.localeDefault,
-    );
-  }
+    NearpayService() {
+      nearpay = Nearpay(
+        authType: AuthenticationType.login,
+        authValue: " ",
+        env: Environments.sandbox,
+        locale: Locale.localeDefault,
+      );
+    }
 
   // Method to initialize Nearpay
   Future<void> initializeNearpay() async {
