@@ -9,6 +9,7 @@ import 'theme/app_theme.dart';
 import 'dart:typed_data';
 import 'package:postology/models/ClearHelper.dart';
 import 'package:postology/nearpay_service.dart';
+import 'package:sunmi_printerx/align.dart';
 
 
 void main() {
@@ -180,7 +181,7 @@ class _PortalPageState extends State<PortalPage> {
             List<String> orderlineParts = orderlineDetails.split(":");
 
             // Store the orderline parts for this order if correctly formatted
-            if (orderlineParts.length == 3) {
+            if (orderlineParts.length == 2) {
               if (orders.containsKey("currentOrder")) {
                 orders["currentOrder"]!["orderlines"] ??= [];
                 orders["currentOrder"]!["orderlines"].add(orderlineParts);
@@ -260,51 +261,31 @@ class _PortalPageState extends State<PortalPage> {
     // Prepare a buffer for the content to be printed
     StringBuffer contentToPrint = StringBuffer();
     StringBuffer contentToPrinttitle = StringBuffer();
-
+    List<String> orderline = ['',''];
     // Iterate over the order lines and format them accordingly
     contentToPrinttitle.writeln("Order Receipt");
     contentToPrinttitle.writeln("Casher name: $_Cashername");
     contentToPrinttitle.writeln("Printer name: $categoryId");
     contentToPrinttitle.writeln("Order Number: $_ordernumer");
-
     contentToPrinttitle.writeln("----------------------------");
-    contentToPrinttitle.writeln("category\tName\t\t\tquantity");
 
-
-    for (List<String> orderline in orderlines) {
-      if (orderline.length == 3) {
-        String category = orderline[0];
-        String productName = orderline[1];
-        String quantity = orderline[2];
-        // Format the order details
-        contentToPrint.writeln("$category\t\t$productName\t\t$quantity\n");
-        print(
-            "Orderline captured: Category: $category, Item: $productName, Quantity: $quantity");
-      } else {
-        print("Invalid order line format: $orderline");
-      }
-    }
     // Check for selected printer
     PrinterModel? selectedPrinter = await DatabaseHelper.instance
         .getPrinterByCategory(categoryId);
-
     if (selectedPrinter == null) {
       print("No printer found for category: $categoryId.");
       return;
     }
     print("Printer is selected: ${selectedPrinter.printerId}");
     print("Printer is selected: ${selectedPrinter.name}");
-
     try {
       // Check if the printer SDK's printer object is initialized
       //if (printer == null || !printer.getPrinterStatus(selectedPrinter.printerId)) {
       //  print("Printer is not initialized or not connected.");
       //  return;
       //}
-
       //print('printer status:   ');
       //print(printer.getPrinterStatus(selectedPrinter.printerId).toString());
-
       // Check if it's a receipt or a normal print task
       if (isitreceipt == false) {
         print("Order received for printing.");
@@ -317,16 +298,47 @@ class _PortalPageState extends State<PortalPage> {
           textHeightRatio: 0, // Adjust text size
           bold: true,
         );
+        await printer.printTexts(
+          selectedPrinter.printerId,
+          ['Name','Quantity'],
+          columnWidths: [2,1], // Adjust text size
+          columnAligns: [alignFromString('LEFT')
+            ,alignFromString('LEFT')], // Adjust text size
+        );
+
+        for (orderline in orderlines) {
+          if (orderline.length == 2) {
+            String productName = orderline[0];
+            String quantity = orderline[1];
+            // Format the order details
+            contentToPrint.writeln("$productName\t\t\t\t$quantity\n\n");
+            print(
+                "Orderline captured: Item: $productName, Quantity: $quantity");
+
+            await printer.printTexts(
+              selectedPrinter.printerId,
+              orderline,
+              columnWidths: [2,1], // Adjust text size
+              columnAligns: [alignFromString('LEFT')
+                ,alignFromString('LEFT'),], // Adjust text size
+            );
+          } else {
+            print("Invalid order line format: $orderline");
+          }
+        }
 
         await printer.printText(
           selectedPrinter.printerId,
-          contentToPrint.toString(),
+          '\n\n\n\n\n',
           textWidthRatio: 0, // Adjust text size
           textHeightRatio: 0, // Adjust text size
-          bold: false,
+          bold: true,
         );
+
         print('Printed to printer: ${selectedPrinter
             .name} for category ${categoryId} \n${contentToPrint.toString()}');
+
+
         await printer.printEscPosCommands(selectedPrinter.printerId,
             Uint8List.fromList([0x1D, 0x56, 0x42, 0x00]));
 
