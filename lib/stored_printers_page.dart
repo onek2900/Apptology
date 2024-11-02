@@ -45,13 +45,13 @@ class _StoredPrintersPageState extends State<StoredPrintersPage> {
           final printer = printers[index];
           return ListTile(
             title: Text(printer.name),
-            subtitle: Text('Category: ${printer.category}, ID: ${printer
-                .printerId}, Status: ${printer.isMain == 1
+            subtitle: Text('Printer: ${printer.category}, ID: ${printer
+                .printerId}, Status: ${printer.isMain == true
                 ? 'Main Printer'
                 : 'Secondary Printer'}'),
-            trailing: printer.isMain == 1
-                ? Icon(Icons.star, color: Colors.green)
-                : Icon(Icons.star_border),
+            trailing: printer.isMain == true
+                ? Icon(Icons.radio_button_checked, color: Colors.green)
+                : Icon(Icons.radio_button_off),
           );
         },
       ),

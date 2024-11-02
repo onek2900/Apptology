@@ -152,7 +152,7 @@ class _PrinterManagementPageState extends State<PrinterManagementPage> {
                     columns: const <DataColumn>[
                       DataColumn(
                         label: Text(
-                          'Category',
+                          'Printer',
                           style: TextStyle(fontStyle: FontStyle.italic),
                         ),
                       ),
