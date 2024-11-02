@@ -1,44 +1,31 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Define your primary color and other theme settings here
   static final ThemeData appTheme = ThemeData(
-    brightness: Brightness.light,
-    primaryColor: Colors.green,
-    colorScheme: ColorScheme.light(primary: Colors.green),
-    scaffoldBackgroundColor: Colors.white,
+    brightness: Brightness.light, // Set to light theme
+    primaryColor: Color(0xFFC2DA69), // Primary color for app elements
+    colorScheme: ColorScheme.light(primary: Color(0xFF222222)), // Use ColorScheme for the light theme
+    scaffoldBackgroundColor: Colors.white, // White background color
     appBarTheme: AppBarTheme(
-      backgroundColor: Colors.white,
-      titleTextStyle: TextStyle(color: Colors.green, fontSize: 20),
+      backgroundColor: Colors.white, // AppBar background color
+      elevation: 0, // Remove elevation
     ),
     buttonTheme: ButtonThemeData(
-      buttonColor: Colors.green,
-      textTheme: ButtonTextTheme.primary,
+      buttonColor: Color(0xFFC2DA69), // Button background color
+      textTheme: ButtonTextTheme.primary, // Button text color
     ),
     textTheme: TextTheme(
-      bodyLarge: TextStyle(color: Colors.green), // Example of bodyText1 usage
-      bodyMedium: TextStyle(color: Colors.green), // Example of bodyText2 usage
+      titleLarge: TextStyle(color: Color(0xFFC2DA69)), // Use headline6 for main text
+      bodyMedium: TextStyle(color: Color(0xFFC2DA69)), // Use bodyText2 for regular text
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: Colors.white,
+      fillColor: Colors.white, // Input field background color
       border: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.green),
+        borderSide: BorderSide(color: Color(0xFFC2DA69)), // Input field border color
       ),
-      labelStyle: TextStyle(color: Colors.green),
-      hintStyle: TextStyle(color: Colors.grey[400]),
+      labelStyle: TextStyle(color: Color(0xFFC2DA69)), // Label text color
+      hintStyle: TextStyle(color: Colors.grey[400]), // Hint text color
     ),
-  );
-
-  // Define introTitleStyle and introSubtitleStyle here
-  static final TextStyle introTitleStyle = TextStyle(
-    fontSize: 24,
-    fontWeight: FontWeight.bold,
-    color: Colors.green,
-  );
-
-  static final TextStyle introSubtitleStyle = TextStyle(
-    fontSize: 18,
-    color: Colors.green,
   );
 }
