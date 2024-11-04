@@ -4,10 +4,10 @@ import 'package:sunmi_printerx/sunmi_printerx.dart';
 import 'models/printer_model.dart';
 import 'database/database_helper.dart';
 import 'dart:typed_data';
-import 'package:postology/nearpay_service.dart';
+import 'package:apptology/nearpay_service.dart';
 import 'package:sunmi_printerx/align.dart';
 import 'package:sunmi_printerx/printerstatus.dart';
-import 'package:postology/my_intro_page.dart';
+import 'package:apptology/my_intro_page.dart';
 
 
 
@@ -143,7 +143,7 @@ automaticallyImplyLeading: false,
             }
           }
           // Handle print_completed message
-          if (message.contains("postology:print_completed")) {
+          if (message.contains("apptology:print_completed")) {
             _printToPrinter(
                 true, 'main', '', '', []); // Just opening the cash drawer
           }

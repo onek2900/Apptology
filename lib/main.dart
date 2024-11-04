@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:postology/my_intro_page.dart';
-import 'package:postology/my_home_page.dart';
-import 'package:postology/theme/app_theme.dart';
+import 'package:apptology/my_intro_page.dart';
+import 'package:apptology/my_home_page.dart';
+import 'package:apptology/theme/app_theme.dart';
 
 void main() {
   runApp(MyApp());

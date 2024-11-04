@@ -1,4 +1,4 @@
-package com.postology.postology  // This should match your package name
+package com.apptology.postology  // This should match your package name
 
 import io.flutter.embedding.android.FlutterActivity
 

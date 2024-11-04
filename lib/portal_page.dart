@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:sunmi_printerx/sunmi_printerx.dart';
-import 'package:postology/nearpay_service.dart'; // Import your Nearpay service
+import 'package:apptology/nearpay_service.dart'; // Import your Nearpay service
 
 
 class PortalPage extends StatefulWidget {
@@ -41,7 +41,7 @@ class _PortalPageState extends State<PortalPage> {
           String message = consoleMessage.message;
 
           // Handle various console messages
-          if (message.contains("postology:print_completed")) {
+          if (message.contains("apptology:print_completed")) {
             _printToPrinter(true, 'main', '', '', []); // Open cash drawer
           } else if (message.contains("nearpay:")) {
             // Handle Nearpay messages
