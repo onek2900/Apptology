@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.postology.postology"
+    namespace = "com.apptology.postology"
 
     compileSdk = flutter.compileSdkVersion
     ndkVersion = 28
@@ -22,11 +22,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.postology.postology"
+        applicationId = "com.apptology.postology"
         minSdk = 21  // Set this explicitly
         targetSdk = 33  // Set this explicitly
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "2.0"
         multiDexEnabled true
     }
 

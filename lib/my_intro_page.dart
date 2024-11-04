@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:postology/theme/app_theme.dart';
-import 'package:postology/my_home_page.dart'; // Adjust import based on your file structure
-import 'package:postology/printer_management.dart';
-import 'package:postology/nearpay_paymentint.dart';
-import 'package:postology/models/ClearHelper.dart';
+import 'package:apptology/theme/app_theme.dart';
+import 'package:apptology/my_home_page.dart'; // Adjust import based on your file structure
+import 'package:apptology/printer_management.dart';
+import 'package:apptology/nearpay_paymentint.dart';
+import 'package:apptology/models/ClearHelper.dart';
 
 
 class MyIntroPage extends StatefulWidget {

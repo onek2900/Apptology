@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart'; // For clearing sha
 import 'package:path_provider/path_provider.dart'; // For getting app cache directory
 // For file operations
 // Web view for the portal
-import 'package:postology/database/database_helper.dart';
+import 'package:apptology/database/database_helper.dart';
 
 
 class ClearDataHelper {
