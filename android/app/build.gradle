@@ -25,8 +25,8 @@ android {
         applicationId = "com.apptology.postology"
         minSdk = 21  // Set this explicitly
         targetSdk = 33  // Set this explicitly
-        versionCode = 2
-        versionName = "2.1.2"
+        versionCode = 3
+        versionName = "3"
         multiDexEnabled true
     }
 
