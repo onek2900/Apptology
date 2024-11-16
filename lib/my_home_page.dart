@@ -112,7 +112,7 @@ automaticallyImplyLeading: false,
             String orderlineDetails = message.split("OrderlinesQTY:")[1].trim();
             List<String> orderlineParts = orderlineDetails.split(":");
             // Store the orderline parts for this order if correctly formatted
-            if (orderlineParts.length == 4) {
+            if (orderlineParts.length == 3) {
               if (orders.containsKey("currentOrder")) {
                 orders["currentOrder"]!["orderlines"] ??= [];
                 orders["currentOrder"]!["orderlines"].add(orderlineParts);
@@ -126,7 +126,6 @@ automaticallyImplyLeading: false,
             // Retrieve stored details
             Map<String, dynamic>? currentOrder = orders["currentOrder"];
             if (currentOrder != null) {
-              String categorynam = currentOrder["category"];
               String printername = currentOrder["printername"];
               String cashiername = currentOrder["cashiername"];
               String orderNumber = currentOrder["orderNumber"];
