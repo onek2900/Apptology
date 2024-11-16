@@ -112,7 +112,7 @@ automaticallyImplyLeading: false,
             String orderlineDetails = message.split("OrderlinesQTY:")[1].trim();
             List<String> orderlineParts = orderlineDetails.split(":");
             // Store the orderline parts for this order if correctly formatted
-            if (orderlineParts.length == 3) {
+            if (orderlineParts.length == 4) {
               if (orders.containsKey("currentOrder")) {
                 orders["currentOrder"]!["orderlines"] ??= [];
                 orders["currentOrder"]!["orderlines"].add(orderlineParts);
@@ -126,6 +126,7 @@ automaticallyImplyLeading: false,
             // Retrieve stored details
             Map<String, dynamic>? currentOrder = orders["currentOrder"];
             if (currentOrder != null) {
+              String categorynam = currentOrder["category"];
               String printername = currentOrder["printername"];
               String cashiername = currentOrder["cashiername"];
               String orderNumber = currentOrder["orderNumber"];
@@ -181,6 +182,17 @@ automaticallyImplyLeading: false,
     );
   }
 
+  Future<void> _ArbEscPosCommands(String printerId, Uint8List commands) async {
+    try {
+      await printer.printEscPosCommands(printerId, commands);
+      print('ESC/POS commands sent successfully.');
+    } catch (e) {
+      print('Error printing ESC/POS commands: $e');
+      // Handle error as needed
+    }
+  }
+
+
   Future<void> _printToPrinter(bool isitreceipt, String categoryId,
       String _Cashername, String _ordernumer,
       List<List<String>> orderlines) async {
@@ -215,25 +227,27 @@ automaticallyImplyLeading: false,
 
 
     try {
-      // Check if the printer SDK's printer object is initialized
       if (printer == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Printer SDK is not initialized.")),
         );
         return;
       }
+
       PrinterStatus status = await printer.getPrinterStatus(selectedPrinter.printerId);
       print('Printer Status: $status');
 
       if (status != PrinterStatus.ready) {
+        // Log a warning but continue to print
+        print("Warning: Printer is not ready. Continuing with the print job.");
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("${selectedPrinter.name} Printer is not ready.")),
+          SnackBar(content: Text("Warning: ${selectedPrinter.name} Printer is not ready. Attempting to print anyway.")),
         );
         return;
       }
-      // Check if it's a receipt or a normal print task
-      if (isitreceipt == false) {
 
+      if (isitreceipt == false) {
+        // Printing process
         await printer.printText(
           selectedPrinter.printerId,
           contentToPrinttitle.toString(),
@@ -241,12 +255,24 @@ automaticallyImplyLeading: false,
           textHeightRatio: 0, // Adjust text size
           bold: true,
         );
-        await printer.printTexts(
+
+        int productNameWidth = 30; // Adjust based on printer width
+        int quantityWidth = 10;    // Adjust as needed
+
+        await printer.printText(
           selectedPrinter.printerId,
-          ['Name','Quantity'],
-          columnWidths: [2,1], // Adjust text size
-          columnAligns: [alignFromString('CENTER')
-            ,alignFromString('RIGHT')], // Adjust text size
+          'Name'.padRight(productNameWidth) + 'Quantity'.padLeft(quantityWidth),
+          textWidthRatio: 0,
+          textHeightRatio: 0,
+          bold: true,
+        );
+
+        await printer.printText(
+          selectedPrinter.printerId,
+          ''.padRight(productNameWidth + quantityWidth, '-'),
+          textWidthRatio: 0,
+          textHeightRatio: 0,
+          bold: false,
         );
 
         for (orderline in orderlines) {
@@ -255,49 +281,46 @@ automaticallyImplyLeading: false,
             String quantity = orderline[1];
             String customernote = orderline[2];
 
-            await printer.printTexts(
+            String formattedLine = productName.padRight(productNameWidth) + quantity.padLeft(quantityWidth);
+
+            await printer.printText(
               selectedPrinter.printerId,
-              [productName,quantity],
-              columnWidths: [2,1], // Adjust text size
-              columnAligns: [alignFromString('LEFT')
-                ,alignFromString('RIGHT'),], // Adjust text size
+              formattedLine,
+              textWidthRatio: 0,
+              textHeightRatio: 0,
+              bold: false,
             );
 
-            await printer.printTexts(
+            await printer.printText(
               selectedPrinter.printerId,
-              [customernote],
-              columnWidths: [1], // Adjust text size
-              columnAligns: [alignFromString('CENTER'),], // Adjust text size
+              customernote.padLeft(productNameWidth + quantityWidth),
+              textWidthRatio: 0,
+              textHeightRatio: 0,
+              bold: true,
             );
-
           } else {
             print("Invalid order line format: $orderline");
           }
         }
 
-        print('Printed to printer: ${selectedPrinter
-            .name} for category ${categoryId} \n${contentToPrint.toString()}');
+        print('Printed to printer: ${selectedPrinter.name} for category $categoryId \n${contentToPrint.toString()}');
 
         await printer.printEscPosCommands(selectedPrinter.printerId,
             Uint8List.fromList([0x1D, 0x56, 0x42, 0x00]));
+
       } else {
-        if (status != PrinterStatus.ready) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("${selectedPrinter.name} Printer is not ready.")),
-          );
-          return;
-        }
+        // Receipt handling
         print("Opening cash drawer for category: $categoryId");
         await printer.openCashDrawer(selectedPrinter.printerId);
         print('Cash drawer opened successfully.');
       }
     } catch (e) {
-
       print('Error during printing: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to print: $e'))
+        SnackBar(content: Text('Failed to print: $e')),
       );
     }
+
   }
 
 

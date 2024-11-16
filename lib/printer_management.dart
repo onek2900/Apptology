@@ -81,6 +81,7 @@ class _PrinterManagementPageState extends State<PrinterManagementPage> {
   // Store all printers in the database
   Future<void> _storeAllPrintersInDatabase() async {
     try {
+
       await DatabaseHelper.instance.deleteAllPrinters();
       // Delete previous data
       for (int i = 0; i < printerList.length; i++) {
@@ -90,6 +91,7 @@ class _PrinterManagementPageState extends State<PrinterManagementPage> {
           printerId: printerList[i].printerId,
           isMain: selectedMainPrinterIndex == i, // Set as main if selected
         );
+
 
         await DatabaseHelper.instance.insertPrinter(printerModel);
         print('Printer ${printerModel.name} stored in database');
@@ -112,6 +114,9 @@ class _PrinterManagementPageState extends State<PrinterManagementPage> {
       selectedMainPrinterIndex = index; // Mark this index as the main printer
     });
   }
+
+
+
 
   // Perform test print and open the cash drawer
   Future<void> _testPrintAndOpenDrawer(PrinterModel printer1, String category) async {
