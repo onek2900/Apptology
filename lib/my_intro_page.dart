@@ -1,30 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:apptology/theme/app_theme.dart';
-import 'package:apptology/my_home_page.dart'; // Adjust import based on your file structure
+import 'package:apptology/my_home_page.dart';
 import 'package:apptology/printer_management.dart';
 import 'package:apptology/nearpay_paymentint.dart';
 import 'package:apptology/models/ClearHelper.dart';
-
 
 class MyIntroPage extends StatefulWidget {
   @override
   _MyIntroPageState createState() => _MyIntroPageState();
 }
 
-class _MyIntroPageState extends State<MyIntroPage> {
+class _MyIntroPageState extends State<MyIntroPage> with AutomaticKeepAliveClientMixin {
   TextEditingController _textEditingController = TextEditingController();
   final ClearDataHelper clearDataHelper = ClearDataHelper();
 
-
+  @override
+  bool get wantKeepAlive => true;
 
   @override
-  void dispose() {
-    _textEditingController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _textEditingController = TextEditingController();
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Ensure to call super.build(context) in your build method
     return Scaffold(
       backgroundColor: AppTheme.appTheme.scaffoldBackgroundColor,
       body: Row(
@@ -57,12 +58,11 @@ class _MyIntroPageState extends State<MyIntroPage> {
           Expanded(
             flex: 3,
             child: Container(
-              padding: const EdgeInsets.all(20.0), // Adjust padding as needed
+              padding: const EdgeInsets.all(20.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
                   SizedBox(height: 20),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 5.0),
@@ -71,6 +71,7 @@ class _MyIntroPageState extends State<MyIntroPage> {
                       children: [
                         Expanded(
                           child: TextField(
+                            key: PageStorageKey('companyNameTextField'), // Assign PageStorageKey to TextField
                             controller: _textEditingController,
                             decoration: InputDecoration(
                               labelText: 'Enter your company name',
@@ -80,55 +81,45 @@ class _MyIntroPageState extends State<MyIntroPage> {
                               ),
                             ),
                             onChanged: (value) {
-                              // Automatically add '.postology.cloud' while typing
-                              if (!_textEditingController.text.endsWith(
-                                  '.postology.cloud')) {
+                              if (!_textEditingController.text.endsWith('.postology.cloud')) {
                                 _textEditingController.value = TextEditingValue(
                                   text: value.endsWith('.postology.cloud')
                                       ? value
                                       : '$value.postology.cloud',
-                                  selection: TextSelection.collapsed(
-                                      offset: _textEditingController.text
-                                          .length),
+                                  selection: TextSelection.collapsed(offset: _textEditingController.text.length),
                                 );
                               }
                             },
                             onSubmitted: (value) {
-                              String enteredUrl = _textEditingController.text
-                                  .trim();
-                              String updatedUrl = 'https://$enteredUrl'; // Get the entered URL
+                              String enteredUrl = _textEditingController.text.trim();
+                              String updatedUrl = 'https://$enteredUrl';
                               if (enteredUrl.isNotEmpty) {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (context) =>
-                                      MyHomePage(url: updatedUrl)),
+                                  MaterialPageRoute(builder: (context) => MyHomePage(url: updatedUrl)),
                                 );
                               }
                             },
                           ),
                         ),
                         SizedBox(width: 16),
-                        // Optional spacing between TextField and ElevatedButton
                         SizedBox(
-                          width: 100, // Fixed width for the ElevatedButton
+                          width: 100,
                           child: ElevatedButton(
                             onPressed: () {
-                              // Navigate to MyHomePage with the URL from the text field
-                              String enteredUrl = _textEditingController.text
-                                  .trim();
-                              String updatedUrl = 'https://$enteredUrl'; // Construct the URL
+                              String enteredUrl = _textEditingController.text.trim();
+                              String updatedUrl = 'https://$enteredUrl';
                               if (enteredUrl.isNotEmpty) {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (context) =>
-                                      MyHomePage(url: updatedUrl)),
+                                  MaterialPageRoute(builder: (context) => MyHomePage(url: updatedUrl)),
                                 );
                               }
                             },
                             style: ElevatedButton.styleFrom(
-                              padding: EdgeInsets.symmetric(vertical: 14.0), // Adjust vertical padding as needed
+                              padding: EdgeInsets.symmetric(vertical: 14.0),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8.0), // Adjust border radius as needed
+                                borderRadius: BorderRadius.circular(8.0),
                               ),
                               backgroundColor: Color(0xFFC2DA69),
                             ),
@@ -142,13 +133,9 @@ class _MyIntroPageState extends State<MyIntroPage> {
                   SizedBox(height: 20),
                   Container(
                     alignment: Alignment.bottomCenter,
-                    // Aligns the content at the bottom center of the container
                     padding: EdgeInsets.all(16.0),
-                    // Optional padding around the row of buttons
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
-
-                      // Adjust as needed
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         SizedBox(
@@ -156,14 +143,13 @@ class _MyIntroPageState extends State<MyIntroPage> {
                           child: ElevatedButton(
                             onPressed: () {
                               Navigator.of(context).push(
-                                MaterialPageRoute(builder: (context) =>
-                                    PrinterManagementPage()),
+                                MaterialPageRoute(builder: (context) => PrinterManagementPage()),
                               );
                             },
                             style: ElevatedButton.styleFrom(
-                              padding: EdgeInsets.symmetric(vertical: 14.0), // Adjust vertical padding as needed
+                              padding: EdgeInsets.symmetric(vertical: 14.0),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8.0), // Adjust border radius as needed
+                                borderRadius: BorderRadius.circular(8.0),
                               ),
                               backgroundColor: Color(0xFFC2DA69),
                             ),
@@ -174,16 +160,14 @@ class _MyIntroPageState extends State<MyIntroPage> {
                           width: 150,
                           child: ElevatedButton(
                             onPressed: () {
-                              // Uncomment and use once NearpayPaymentint page is available
                               Navigator.of(context).push(
-                                MaterialPageRoute(
-                                    builder: (context) => NearpayPaymentint()),
+                                MaterialPageRoute(builder: (context) => NearpayPaymentint()),
                               );
                             },
                             style: ElevatedButton.styleFrom(
-                              padding: EdgeInsets.symmetric(vertical: 14.0), // Adjust vertical padding as needed
+                              padding: EdgeInsets.symmetric(vertical: 14.0),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8.0), // Adjust border radius as needed
+                                borderRadius: BorderRadius.circular(8.0),
                               ),
                               backgroundColor: Color(0xFFC2DA69),
                             ),
@@ -194,12 +178,12 @@ class _MyIntroPageState extends State<MyIntroPage> {
                           width: 150,
                           child: ElevatedButton(
                             onPressed: () {
-                              _clearCookiesAndHistory(); // Clear cookies and history when pressed
+                              _clearCookiesAndHistory();
                             },
                             style: ElevatedButton.styleFrom(
-                              padding: EdgeInsets.symmetric(vertical: 14.0), // Adjust vertical padding as needed
+                              padding: EdgeInsets.symmetric(vertical: 14.0),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8.0), // Adjust border radius as needed
+                                borderRadius: BorderRadius.circular(8.0),
                               ),
                               backgroundColor: Color(0xFFC2DA69),
                             ),
@@ -218,12 +202,17 @@ class _MyIntroPageState extends State<MyIntroPage> {
     );
   }
 
-    // Method to clear cookies and history
   void _clearCookiesAndHistory() async {
     await clearDataHelper.clearAllData();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text("Settings are cleared.")),
     );
     print('Cookies cleared.');
+  }
+
+  @override
+  void dispose() {
+    _textEditingController.dispose();
+    super.dispose();
   }
 }
