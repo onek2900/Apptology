@@ -112,13 +112,14 @@ automaticallyImplyLeading: false,
             String orderlineDetails = message.split("OrderlinesQTY:")[1].trim();
             List<String> orderlineParts = orderlineDetails.split(":");
             // Store the orderline parts for this order if correctly formatted
-            if (orderlineParts.length == 3) {
+            if (orderlineParts.length == 4) {
               if (orders.containsKey("currentOrder")) {
                 orders["currentOrder"]!["orderlines"] ??= [];
                 orders["currentOrder"]!["orderlines"].add(orderlineParts);
               }
             } else {
-              print("Invalid order line format: $orderlineParts");
+
+              print("Invalid order line format11: $orderlineParts");
             }
           }
           // Check if the order is completed
@@ -195,20 +196,7 @@ automaticallyImplyLeading: false,
   Future<void> _printToPrinter(bool isitreceipt, String categoryId,
       String _Cashername, String _ordernumer,
       List<List<String>> orderlines) async {
-
-    // Prepare a buffer for the content to be printed
-    StringBuffer contentToPrint = StringBuffer();
-    StringBuffer contentToPrinttitle = StringBuffer();
-    List<String> orderline = ['',''];
-
-    // Iterate over the order lines and format them accordingly
-    contentToPrinttitle.writeln("Order Receipt");
-    contentToPrinttitle.writeln("Casher name: $_Cashername");
-    contentToPrinttitle.writeln("Printer name: $categoryId");
-    contentToPrinttitle.writeln("Order Number: $_ordernumer");
-    contentToPrinttitle.writeln("--------------------------------");
-
-    // Check for selected printer
+    // Ensure the printer is selected
     PrinterModel? selectedPrinter = await DatabaseHelper.instance
         .getPrinterByCategory(categoryId);
     if (selectedPrinter == null) {
@@ -219,108 +207,91 @@ automaticallyImplyLeading: false,
       return;
     }
 
-    print("Printer Name is selected: ${selectedPrinter.name}");
-    print("Printer ID is selected: ${selectedPrinter.printerId}");
-
-    print("test is below \n");
-
-
     try {
-      if (printer == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Printer SDK is not initialized.")),
-        );
-        return;
-      }
-
       PrinterStatus status = await printer.getPrinterStatus(selectedPrinter.printerId);
-      print('Printer Status: $status');
-
       if (status != PrinterStatus.ready) {
-        // Log a warning but continue to print
-        print("Warning: Printer is not ready. Continuing with the print job.");
+        print("Warning: Printer is not ready.");
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Warning: ${selectedPrinter.name} Printer is not ready. Attempting to print anyway.")),
+          SnackBar(content: Text("Printer is not ready.")),
         );
         return;
       }
 
-      if (isitreceipt == false) {
-        // Printing process
-        await printer.printText(
-          selectedPrinter.printerId,
-          contentToPrinttitle.toString(),
-          textWidthRatio: 0, // Adjust text size
-          textHeightRatio: 0, // Adjust text size
-          bold: true,
-        );
+      // Group orders by the first value (orderlineParts[0])
+      Map<String, List<List<String>>> groupedOrders = {};
+      for (var orderline in orderlines) {
+        if (orderline.isNotEmpty) {
+          String groupKey = orderline[0]; // Use the first value as the key
+          groupedOrders[groupKey] ??= [];
+          groupedOrders[groupKey]!.add(orderline);
+        }
+      }
+
+      // Print each group on a separate paper
+      for (var groupKey in groupedOrders.keys) {
+        List<List<String>> groupOrderlines = groupedOrders[groupKey]!;
+
+        // Prepare header and content for this group
+        StringBuffer contentToPrint = StringBuffer();
+        contentToPrint.writeln("Order Receipt");
+        contentToPrint.writeln("Cashier: $_Cashername");
+        contentToPrint.writeln("Printer: ${selectedPrinter.name}");
+        contentToPrint.writeln("Order Number: $_ordernumer");
+        contentToPrint.writeln("Group: $groupKey");
+        contentToPrint.writeln("--------------------------------");
 
         int productNameWidth = 30; // Adjust based on printer width
         int quantityWidth = 10;    // Adjust as needed
 
-        await printer.printText(
-          selectedPrinter.printerId,
-          'Name'.padRight(productNameWidth) + 'Quantity'.padLeft(quantityWidth),
-          textWidthRatio: 0,
-          textHeightRatio: 0,
-          bold: true,
+        // Add table headers
+        contentToPrint.writeln(
+          'Name'.padRight(productNameWidth) + 'Qty'.padLeft(quantityWidth),
         );
+        contentToPrint.writeln(''.padRight(productNameWidth + quantityWidth, '-'));
 
-        await printer.printText(
-          selectedPrinter.printerId,
-          ''.padRight(productNameWidth + quantityWidth, '-'),
-          textWidthRatio: 0,
-          textHeightRatio: 0,
-          bold: false,
-        );
-
-        for (orderline in orderlines) {
-          if (orderline.length == 3) {
-            String productName = orderline[0];
-            String quantity = orderline[1];
-            String customernote = orderline[2];
+        // Add the grouped orderlines
+        for (var orderline in groupOrderlines) {
+          if (orderline.length >= 4) {
+            String productName = orderline[1];
+            String quantity = orderline[2];
+            String customernote = orderline[3];
 
             String formattedLine = productName.padRight(productNameWidth) + quantity.padLeft(quantityWidth);
 
-            await printer.printText(
-              selectedPrinter.printerId,
-              formattedLine,
-              textWidthRatio: 0,
-              textHeightRatio: 0,
-              bold: false,
-            );
-
-            await printer.printText(
-              selectedPrinter.printerId,
-              customernote.padLeft(productNameWidth + quantityWidth),
-              textWidthRatio: 0,
-              textHeightRatio: 0,
-              bold: true,
-            );
+            contentToPrint.writeln(formattedLine);
+            contentToPrint.writeln(customernote.padLeft(productNameWidth + quantityWidth));
           } else {
             print("Invalid order line format: $orderline");
           }
         }
 
-        print('Printed to printer: ${selectedPrinter.name} for category $categoryId \n${contentToPrint.toString()}');
-
-        await printer.printEscPosCommands(selectedPrinter.printerId,
-            Uint8List.fromList([0x1D, 0x56, 0x42, 0x00]));
-
-      } else {
-        // Receipt handling
-        print("Opening cash drawer for category: $categoryId");
-        await printer.openCashDrawer(selectedPrinter.printerId);
-        print('Cash drawer opened successfully.');
+        // Print the content
+        if (isitreceipt == false) {
+          await printer.printText(
+            selectedPrinter.printerId,
+            contentToPrint.toString(),
+            textWidthRatio: 0,
+            textHeightRatio: 0,
+            bold: false,
+          );
+          await printer.printEscPosCommands(
+            selectedPrinter.printerId,
+            Uint8List.fromList([0x1D, 0x56, 0x42, 0x00]),
+          ); // Form feed to eject paper
+        } else {
+          await printer.openCashDrawer(selectedPrinter.printerId);
+          print('Cash drawer opened successfully.');
+        }
       }
+
     } catch (e) {
       print('Error during printing: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to print: $e')),
       );
     }
-
   }
+
 
 
 }
