@@ -9,7 +9,6 @@ android {
     namespace = "com.apptology.postology"
 
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = 28
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -23,10 +22,9 @@ android {
 
     defaultConfig {
         applicationId = "com.apptology.postology"
-        minSdk = 21  // Set this explicitly
-        targetSdk = 33  // Set this explicitly
-        versionCode = 3
-        versionName = "3"
+        minSdk = 24  // Set this explicitly
+        versionCode = 5
+        versionName = "5"
         multiDexEnabled true
     }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter_inappwebview/flutter_inappwebview.dart'; // Web view for the portal
 import 'package:sunmi_printerx/sunmi_printerx.dart';
 import 'models/printer_model.dart';
@@ -8,9 +9,12 @@ import 'package:apptology/nearpay_service.dart';
 import 'package:sunmi_printerx/align.dart';
 import 'package:sunmi_printerx/printerstatus.dart';
 import 'package:apptology/my_intro_page.dart';
+import 'package:flutter/foundation.dart' show consolidateHttpClientResponseBytes;
 
-
-
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_file/open_file.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 
 
@@ -40,34 +44,33 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-automaticallyImplyLeading: false,
-        actions: [
-          Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: Icon(Icons.home),
-                  color: Color(0xFFC2DA69),
-                  onPressed: () {
-                    Navigator.of(context).push(MaterialPageRoute(builder: (context) => MyIntroPage()));
-                  },
-                ),
-              ],
+
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(20),
+        child: AppBar(
+          automaticallyImplyLeading: false,
+          title: const SizedBox.shrink(), // or your title widget
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.home),
+              color: const Color(0xFFC2DA69),
+              padding: EdgeInsets.zero, // tighter if you want
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => MyIntroPage()),
+                );
+              },
             ),
-          ),
-        ],
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-        ),
+          ],
+      ),
       ),
       body: InAppWebView(
         initialUrlRequest: URLRequest(url: WebUri(widget.url)),
         initialOptions: InAppWebViewGroupOptions(
           crossPlatform: InAppWebViewOptions(
             javaScriptEnabled: true, // Enable JavaScript here
+            useOnDownloadStart: true, // ✅ Enable download interception
+
           ),
           android: AndroidInAppWebViewOptions(
             useHybridComposition: true, // Enable hybrid composition to avoid rendering issues
@@ -76,6 +79,7 @@ automaticallyImplyLeading: false,
         onWebViewCreated: (controller) {
           webViewController = controller;
         },
+
         onConsoleMessage: (controller, consoleMessage) {
           String message = consoleMessage.message;
           // Check for "Order Start"
@@ -112,14 +116,13 @@ automaticallyImplyLeading: false,
             String orderlineDetails = message.split("OrderlinesQTY:")[1].trim();
             List<String> orderlineParts = orderlineDetails.split(":");
             // Store the orderline parts for this order if correctly formatted
-            if (orderlineParts.length == 4) {
+            if (orderlineParts.length == 3) {
               if (orders.containsKey("currentOrder")) {
                 orders["currentOrder"]!["orderlines"] ??= [];
                 orders["currentOrder"]!["orderlines"].add(orderlineParts);
               }
             } else {
-
-              print("Invalid order line format11: $orderlineParts");
+              print("Invalid order line format: $orderlineParts");
             }
           }
           // Check if the order is completed
@@ -182,21 +185,23 @@ automaticallyImplyLeading: false,
     );
   }
 
-  Future<void> _ArbEscPosCommands(String printerId, Uint8List commands) async {
-    try {
-      await printer.printEscPosCommands(printerId, commands);
-      print('ESC/POS commands sent successfully.');
-    } catch (e) {
-      print('Error printing ESC/POS commands: $e');
-      // Handle error as needed
-    }
-  }
-
-
   Future<void> _printToPrinter(bool isitreceipt, String categoryId,
       String _Cashername, String _ordernumer,
       List<List<String>> orderlines) async {
-    // Ensure the printer is selected
+
+    // Prepare a buffer for the content to be printed
+    StringBuffer contentToPrint = StringBuffer();
+    StringBuffer contentToPrinttitle = StringBuffer();
+    List<String> orderline = ['',''];
+
+    // Iterate over the order lines and format them accordingly
+    contentToPrinttitle.writeln("Order Receipt");
+    contentToPrinttitle.writeln("Casher name: $_Cashername");
+    contentToPrinttitle.writeln("Printer name: $categoryId");
+    contentToPrinttitle.writeln("Order Number: $_ordernumer");
+    contentToPrinttitle.writeln("--------------------------------");
+
+    // Check for selected printer
     PrinterModel? selectedPrinter = await DatabaseHelper.instance
         .getPrinterByCategory(categoryId);
     if (selectedPrinter == null) {
@@ -207,91 +212,101 @@ automaticallyImplyLeading: false,
       return;
     }
 
+    print("Printer Name is selected: ${selectedPrinter.name}");
+    print("Printer ID is selected: ${selectedPrinter.printerId}");
+
+    print("test is below \n");
+
+
     try {
-      PrinterStatus status = await printer.getPrinterStatus(selectedPrinter.printerId);
-      if (status != PrinterStatus.ready) {
-        print("Warning: Printer is not ready.");
+      // Check if the printer SDK's printer object is initialized
+      if (printer == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Printer is not ready.")),
+          SnackBar(content: Text("Printer SDK is not initialized.")),
         );
         return;
       }
+      PrinterStatus status = await printer.getPrinterStatus(selectedPrinter.printerId);
+      print('Printer Status: $status');
 
-      // Group orders by the first value (orderlineParts[0])
-      Map<String, List<List<String>>> groupedOrders = {};
-      for (var orderline in orderlines) {
-        if (orderline.isNotEmpty) {
-          String groupKey = orderline[0]; // Use the first value as the key
-          groupedOrders[groupKey] ??= [];
-          groupedOrders[groupKey]!.add(orderline);
-        }
-      }
-
-      // Print each group on a separate paper
-      for (var groupKey in groupedOrders.keys) {
-        List<List<String>> groupOrderlines = groupedOrders[groupKey]!;
-
-        // Prepare header and content for this group
-        StringBuffer contentToPrint = StringBuffer();
-        contentToPrint.writeln("Order Receipt");
-        contentToPrint.writeln("Cashier: $_Cashername");
-        contentToPrint.writeln("Printer: ${selectedPrinter.name}");
-        contentToPrint.writeln("Order Number: $_ordernumer");
-        contentToPrint.writeln("Group: $groupKey");
-        contentToPrint.writeln("--------------------------------");
-
-        int productNameWidth = 30; // Adjust based on printer width
-        int quantityWidth = 10;    // Adjust as needed
-
-        // Add table headers
-        contentToPrint.writeln(
-          'Name'.padRight(productNameWidth) + 'Qty'.padLeft(quantityWidth),
+      if (status != PrinterStatus.ready) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("${selectedPrinter.name} Printer is not ready.")),
         );
-        contentToPrint.writeln(''.padRight(productNameWidth + quantityWidth, '-'));
+        return;
+      }
+      // Check if it's a receipt or a normal print task
+      if (isitreceipt == false) {
 
-        // Add the grouped orderlines
-        for (var orderline in groupOrderlines) {
-          if (orderline.length >= 4) {
-            String productName = orderline[1];
-            String quantity = orderline[2];
-            String customernote = orderline[3];
+        await printer.printText(
+          selectedPrinter.printerId,
+          contentToPrinttitle.toString(),
+          textWidthRatio: 0, // Adjust text size
+          textHeightRatio: 0, // Adjust text size
+          bold: true,
+        );
+        await printer.printTexts(
+          selectedPrinter.printerId,
+          ['Product','Quantity'],
+          columnWidths: [2,1], // Adjust text size
+          columnAligns: [alignFromString('LEFT')
+            ,alignFromString('RIGHT')], // Adjust text size
+        );
 
-            String formattedLine = productName.padRight(productNameWidth) + quantity.padLeft(quantityWidth);
+        for (orderline in orderlines) {
+          if (orderline.length == 3) {
+            String productName = orderline[0];
+            String quantity = orderline[1];
+            String customernote = orderline[2];
 
-            contentToPrint.writeln(formattedLine);
-            contentToPrint.writeln(customernote.padLeft(productNameWidth + quantityWidth));
+            await printer.printTexts(
+              selectedPrinter.printerId,
+              [productName,quantity],
+              columnWidths: [2,1], // Adjust text size
+              columnAligns: [alignFromString('LEFT')
+                ,alignFromString('RIGHT'),], // Adjust text size
+            );
+
+            if (customernote == 'undefined') {
+              customernote = '';
+            }
+
+            await printer.printTexts(
+              selectedPrinter.printerId,
+              [customernote],
+              columnWidths: [1], // Adjust text size
+              columnAligns: [alignFromString('CENTER'),], // Adjust text size
+            );
+
           } else {
             print("Invalid order line format: $orderline");
           }
         }
 
-        // Print the content
-        if (isitreceipt == false) {
-          await printer.printText(
-            selectedPrinter.printerId,
-            contentToPrint.toString(),
-            textWidthRatio: 0,
-            textHeightRatio: 0,
-            bold: false,
-          );
-          await printer.printEscPosCommands(
-            selectedPrinter.printerId,
-            Uint8List.fromList([0x1D, 0x56, 0x42, 0x00]),
-          ); // Form feed to eject paper
-        } else {
-          await printer.openCashDrawer(selectedPrinter.printerId);
-          print('Cash drawer opened successfully.');
-        }
-      }
+        print('Printed to printer: ${selectedPrinter
+            .name} for category ${categoryId} \n${contentToPrint.toString()}');
 
+        await printer.printEscPosCommands(selectedPrinter.printerId,
+            Uint8List.fromList([0x1D, 0x56, 0x42, 0x00]));
+      } else {
+        if (status != PrinterStatus.ready) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("${selectedPrinter.name} Printer is not ready.")),
+          );
+          return;
+        }
+        print("Opening cash drawer for category: $categoryId");
+        await printer.openCashDrawer(selectedPrinter.printerId);
+        print('Cash drawer opened successfully.');
+      }
     } catch (e) {
+
       print('Error during printing: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to print: $e')),
+          SnackBar(content: Text('Failed to print: $e'))
       );
     }
   }
 
-
-
 }
+

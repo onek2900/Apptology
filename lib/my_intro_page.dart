@@ -4,6 +4,8 @@ import 'package:apptology/my_home_page.dart';
 import 'package:apptology/printer_management.dart';
 import 'package:apptology/nearpay_paymentint.dart';
 import 'package:apptology/models/ClearHelper.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 class MyIntroPage extends StatefulWidget {
   @override
@@ -21,6 +23,21 @@ class _MyIntroPageState extends State<MyIntroPage> with AutomaticKeepAliveClient
   void initState() {
     super.initState();
     _textEditingController = TextEditingController();
+    _loadSavedCompanyName();
+  }
+  Future<void> _loadSavedCompanyName() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? savedName = prefs.getString('company_name');
+    if (savedName != null) {
+      setState(() {
+        _textEditingController.text = savedName;
+      });
+    }
+  }
+
+  Future<void> _saveCompanyName(String value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('company_name', value);
   }
 
   @override
@@ -94,6 +111,7 @@ class _MyIntroPageState extends State<MyIntroPage> with AutomaticKeepAliveClient
                               String enteredUrl = _textEditingController.text.trim();
                               String updatedUrl = 'https://$enteredUrl';
                               if (enteredUrl.isNotEmpty) {
+                                _saveCompanyName(value); // Save on submit
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(builder: (context) => MyHomePage(url: updatedUrl)),
@@ -106,10 +124,11 @@ class _MyIntroPageState extends State<MyIntroPage> with AutomaticKeepAliveClient
                         SizedBox(
                           width: 100,
                           child: ElevatedButton(
-                            onPressed: () {
+                            onPressed: () async {
                               String enteredUrl = _textEditingController.text.trim();
                               String updatedUrl = 'https://$enteredUrl';
                               if (enteredUrl.isNotEmpty) {
+                                await _saveCompanyName(enteredUrl); // Save the value
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(builder: (context) => MyHomePage(url: updatedUrl)),
