@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_inappwebview/flutter_inappwebview.dart'; // Web view for the portal
 import 'package:sunmi_printerx/sunmi_printerx.dart';
 import 'models/printer_model.dart';
+import 'sunmi_printer_extensions.dart';
 import 'database/database_helper.dart';
 import 'dart:typed_data';
 import 'package:apptology/nearpay_service.dart';
@@ -15,6 +16,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'dart:ui' as ui;
 
 
 
@@ -185,21 +187,55 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  Future<Uint8List> _buildReceiptImage(String content) async {
+    const double maxWidth = 384; // Sunmi printer paper width
+    final ui.ParagraphBuilder builder = ui.ParagraphBuilder(
+      ui.ParagraphStyle(textDirection: TextDirection.ltr),
+    )
+      ..pushStyle(ui.TextStyle(
+        color: ui.Color(0xFF000000),
+        fontSize: 22,
+      ))
+      ..addText(content);
+    final ui.Paragraph paragraph = builder.build()
+      ..layout(const ui.ParagraphConstraints(width: maxWidth));
+    final ui.PictureRecorder recorder = ui.PictureRecorder();
+    final Canvas canvas = Canvas(recorder);
+    canvas.drawParagraph(paragraph, Offset.zero);
+    final ui.Image image = await recorder.endRecording().toImage(
+      maxWidth.toInt(),
+      paragraph.height.ceil(),
+    );
+    final ByteData? bytes =
+        await image.toByteData(format: ui.ImageByteFormat.png);
+    return bytes!.buffer.asUint8List();
+  }
+
   Future<void> _printToPrinter(bool isitreceipt, String categoryId,
       String _Cashername, String _ordernumer,
       List<List<String>> orderlines) async {
 
     // Prepare a buffer for the content to be printed
-    StringBuffer contentToPrint = StringBuffer();
-    StringBuffer contentToPrinttitle = StringBuffer();
-    List<String> orderline = ['',''];
-
-    // Iterate over the order lines and format them accordingly
-    contentToPrinttitle.writeln("Order Receipt");
-    contentToPrinttitle.writeln("Casher name: $_Cashername");
-    contentToPrinttitle.writeln("Printer name: $categoryId");
-    contentToPrinttitle.writeln("Order Number: $_ordernumer");
-    contentToPrinttitle.writeln("--------------------------------");
+    StringBuffer receipt = StringBuffer()
+      ..writeln('Order Receipt')
+      ..writeln('Casher name: $_Cashername')
+      ..writeln('Printer name: $categoryId')
+      ..writeln('Order Number: $_ordernumer')
+      ..writeln('--------------------------------')
+      ..writeln('Product          Quantity');
+    for (var line in orderlines) {
+      if (line.length == 3) {
+        String productName = line[0];
+        String quantity = line[1];
+        String customernote = line[2];
+        receipt.writeln('$productName        $quantity');
+        if (customernote != 'undefined' && customernote.trim().isNotEmpty) {
+          receipt.writeln(customernote);
+        }
+      } else {
+        print('Invalid order line format: $line');
+      }
+    }
 
     // Check for selected printer
     PrinterModel? selectedPrinter = await DatabaseHelper.instance
@@ -238,53 +274,11 @@ class _MyHomePageState extends State<MyHomePage> {
       // Check if it's a receipt or a normal print task
       if (isitreceipt == false) {
 
-        await printer.printText(
-          selectedPrinter.printerId,
-          contentToPrinttitle.toString(),
-          textWidthRatio: 0, // Adjust text size
-          textHeightRatio: 0, // Adjust text size
-          bold: true,
-        );
-        await printer.printTexts(
-          selectedPrinter.printerId,
-          ['Product','Quantity'],
-          columnWidths: [2,1], // Adjust text size
-          columnAligns: [alignFromString('LEFT')
-            ,alignFromString('RIGHT')], // Adjust text size
-        );
+        final Uint8List bytes =
+            await _buildReceiptImage(receipt.toString());
+        await printer.printImage(selectedPrinter.printerId, bytes);
 
-        for (orderline in orderlines) {
-          if (orderline.length == 3) {
-            String productName = orderline[0];
-            String quantity = orderline[1];
-            String customernote = orderline[2];
-
-            await printer.printTexts(
-              selectedPrinter.printerId,
-              [productName,quantity],
-              columnWidths: [2,1], // Adjust text size
-              columnAligns: [alignFromString('LEFT')
-                ,alignFromString('RIGHT'),], // Adjust text size
-            );
-
-            if (customernote == 'undefined') {
-              customernote = '';
-            }
-
-            await printer.printTexts(
-              selectedPrinter.printerId,
-              [customernote],
-              columnWidths: [1], // Adjust text size
-              columnAligns: [alignFromString('CENTER'),], // Adjust text size
-            );
-
-          } else {
-            print("Invalid order line format: $orderline");
-          }
-        }
-
-        print('Printed to printer: ${selectedPrinter
-            .name} for category ${categoryId} \n${contentToPrint.toString()}');
+        print('Printed to printer: ${selectedPrinter.name} for category $categoryId');
 
         await printer.printEscPosCommands(selectedPrinter.printerId,
             Uint8List.fromList([0x1D, 0x56, 0x42, 0x00]));
