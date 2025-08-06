@@ -7,7 +7,6 @@ import 'stored_printers_page.dart'; // Import to show stored printers
 import 'package:sunmi_printerx/printer.dart';
 import 'dart:ui' as ui;
 import 'dart:typed_data';
-
 class PrinterManagementPage extends StatefulWidget {
   @override
   _PrinterManagementPageState createState() => _PrinterManagementPageState();
@@ -122,7 +121,8 @@ class _PrinterManagementPageState extends State<PrinterManagementPage> {
     final ui.ParagraphBuilder builder = ui.ParagraphBuilder(
       ui.ParagraphStyle(textDirection: TextDirection.ltr),
     )
-      ..pushStyle(const ui.TextStyle(
+
+      pushStyle(const ui.TextStyle(
         color: ui.Color(0xFF000000),
         fontSize: 22,
       ))
