@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_inappwebview/flutter_inappwebview.dart'; // Web view for the portal
 import 'package:sunmi_printerx/sunmi_printerx.dart';
 import 'models/printer_model.dart';
+import 'sunmi_printer_extensions.dart';
 import 'database/database_helper.dart';
 import 'dart:typed_data';
 import 'package:apptology/nearpay_service.dart';
@@ -191,7 +192,7 @@ class _MyHomePageState extends State<MyHomePage> {
     final ui.ParagraphBuilder builder = ui.ParagraphBuilder(
       ui.ParagraphStyle(textDirection: TextDirection.ltr),
     )
-      ..pushStyle(const ui.TextStyle(
+      ..pushStyle(ui.TextStyle(
         color: ui.Color(0xFF000000),
         fontSize: 22,
       ))
