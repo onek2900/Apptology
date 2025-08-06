@@ -192,7 +192,8 @@ class _MyHomePageState extends State<MyHomePage> {
     final ui.ParagraphBuilder builder = ui.ParagraphBuilder(
       ui.ParagraphStyle(textDirection: TextDirection.ltr),
     )
-      ..pushStyle(ui.TextStyle(
+
+      pushStyle(const ui.TextStyle(
         color: ui.Color(0xFF000000),
         fontSize: 22,
       ))
