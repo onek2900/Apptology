@@ -5,8 +5,7 @@ import 'database/database_helper.dart';
 import 'models/printer_model.dart';
 import 'stored_printers_page.dart'; // Import to show stored printers
 import 'package:sunmi_printerx/printer.dart';
-import 'dart:ui' as ui;
-import 'dart:typed_data';
+
 class PrinterManagementPage extends StatefulWidget {
   @override
   _PrinterManagementPageState createState() => _PrinterManagementPageState();
@@ -116,31 +115,6 @@ class _PrinterManagementPageState extends State<PrinterManagementPage> {
     });
   }
 
-  Future<Uint8List> _buildTestImage(String text) async {
-    const double maxWidth = 384;
-    final ui.ParagraphBuilder builder = ui.ParagraphBuilder(
-      ui.ParagraphStyle(textDirection: TextDirection.ltr),
-    )
-
-      pushStyle(const ui.TextStyle(
-        color: ui.Color(0xFF000000),
-        fontSize: 22,
-      ))
-      ..addText(text);
-    final ui.Paragraph paragraph = builder.build()
-      ..layout(const ui.ParagraphConstraints(width: maxWidth));
-    final ui.PictureRecorder recorder = ui.PictureRecorder();
-    final Canvas canvas = Canvas(recorder);
-    canvas.drawParagraph(paragraph, Offset.zero);
-    final ui.Image image = await recorder.endRecording().toImage(
-      maxWidth.toInt(),
-      paragraph.height.ceil(),
-    );
-    final ByteData? bytes =
-        await image.toByteData(format: ui.ImageByteFormat.png);
-    return bytes!.buffer.asUint8List();
-  }
-
 
 
 
@@ -148,9 +122,7 @@ class _PrinterManagementPageState extends State<PrinterManagementPage> {
   Future<void> _testPrintAndOpenDrawer(PrinterModel printer1, String category) async {
     try {
       print('Test print sent to printer with ID ${printer1.printerId}');
-      final Uint8List bytes =
-          await _buildTestImage('Sample Test Print');
-      await printer.printImage(printer1.printerId.toString(), bytes); // Pass printerId
+      await printer.printText(printer1.printerId.toString(),'Sample Test Print\n\n\n\n\n'); // Pass printerId
       // Open the cash drawer using the printer ID
       print('Cash drawer opened for printer with ID ${printer1.printerId}');
       await printer.openCashDrawer(printer1.printerId.toString()); // Pass printerId
