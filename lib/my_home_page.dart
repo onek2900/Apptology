@@ -3,7 +3,6 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_inappwebview/flutter_inappwebview.dart'; // Web view for the portal
 import 'package:sunmi_printerx/sunmi_printerx.dart';
 import 'models/printer_model.dart';
-import 'sunmi_printer_extensions.dart';
 import 'database/database_helper.dart';
 import 'dart:typed_data';
 import 'package:apptology/nearpay_service.dart';
@@ -187,29 +186,6 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Future<Uint8List> _buildReceiptImage(String content) async {
-    const double maxWidth = 384; // Sunmi printer paper width
-    final ui.ParagraphBuilder builder = ui.ParagraphBuilder(
-      ui.ParagraphStyle(textDirection: TextDirection.ltr),
-    )
-      ..pushStyle(ui.TextStyle(
-        color: ui.Color(0xFF000000),
-        fontSize: 22,
-      ))
-      ..addText(content);
-    final ui.Paragraph paragraph = builder.build()
-      ..layout(const ui.ParagraphConstraints(width: maxWidth));
-    final ui.PictureRecorder recorder = ui.PictureRecorder();
-    final Canvas canvas = Canvas(recorder);
-    canvas.drawParagraph(paragraph, Offset.zero);
-    final ui.Image image = await recorder.endRecording().toImage(
-      maxWidth.toInt(),
-      paragraph.height.ceil(),
-    );
-    final ByteData? bytes =
-        await image.toByteData(format: ui.ImageByteFormat.png);
-    return bytes!.buffer.asUint8List();
-  }
 
   Future<void> _printToPrinter(bool isitreceipt, String categoryId,
       String _Cashername, String _ordernumer,
@@ -274,9 +250,6 @@ class _MyHomePageState extends State<MyHomePage> {
       // Check if it's a receipt or a normal print task
       if (isitreceipt == false) {
 
-        final Uint8List bytes =
-            await _buildReceiptImage(receipt.toString());
-        await printer.printImage(selectedPrinter.printerId, bytes);
 
         print('Printed to printer: ${selectedPrinter.name} for category $categoryId');
 
