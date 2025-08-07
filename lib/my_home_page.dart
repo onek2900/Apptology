@@ -5,17 +5,17 @@ import 'package:sunmi_printerx/sunmi_printerx.dart';
 import 'models/printer_model.dart';
 import 'database/database_helper.dart';
 import 'dart:typed_data';
-import 'package:apptology/nearpay_service.dart';
+import 'package:apptology/services/nearpay_service.dart';
 import 'package:sunmi_printerx/align.dart';
 import 'package:sunmi_printerx/printerstatus.dart';
 import 'package:apptology/my_intro_page.dart';
 import 'package:flutter/foundation.dart' show consolidateHttpClientResponseBytes;
-import 'package:apptology/order_message_handler.dart';
+import 'package:apptology/services/order_message_handler.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 import 'package:permission_handler/permission_handler.dart';
-
+import 'services/pdf_generator.dart';
 
 
 
@@ -165,6 +165,7 @@ class _MyHomePageState extends State<MyHomePage> {
               orderNumber: '',
               orderlines: [],
             );
+
           }
           // Handle print_completed message
           if (message.contains("nearpay:")) {

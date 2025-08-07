@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sunmi_printerx/sunmi_printerx.dart'; // Import only sunmi_printerx.dart
-import 'database/database_helper.dart';
-import 'models/printer_model.dart';
-import 'stored_printers_page.dart'; // Import to show stored printers
+import '../database/database_helper.dart';
+import '../models/printer_model.dart';
+import '../stored_printers_page.dart'; // Import to show stored printers
 import 'package:sunmi_printerx/printer.dart';
 
 class PrinterManagementPage extends StatefulWidget {
