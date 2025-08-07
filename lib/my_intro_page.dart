@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:apptology/theme/app_theme.dart';
 import 'package:apptology/my_home_page.dart';
-import 'package:apptology/printer_management.dart';
-import 'package:apptology/nearpay_paymentint.dart';
+import 'package:apptology/services/printer_management.dart';
+import 'package:apptology/services/nearpay_paymentint.dart';
 import 'package:apptology/models/ClearHelper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

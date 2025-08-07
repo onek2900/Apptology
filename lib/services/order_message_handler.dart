@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:sunmi_printerx/sunmi_printerx.dart';
 import 'package:sunmi_printerx/printerstatus.dart';
 import 'package:sunmi_printerx/align.dart';
-import 'models/printer_model.dart';
-import 'database/database_helper.dart';
+import '../models/printer_model.dart';
+import '../database/database_helper.dart';
+
 
 class OrderMessageHandler {
   static Future<void> printToPrinter({
