@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'database/database_helper.dart';
-import 'models/printer_model.dart';
+import '../database/database_helper.dart';
+import '../models/printer_model.dart';
 
 class StoredPrintersPage extends StatefulWidget {
   @override

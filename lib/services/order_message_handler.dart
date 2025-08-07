@@ -7,7 +7,6 @@ import 'package:sunmi_printerx/align.dart';
 import '../models/printer_model.dart';
 import '../database/database_helper.dart';
 
-
 class OrderMessageHandler {
   static Future<void> printToPrinter({
     required BuildContext context,
